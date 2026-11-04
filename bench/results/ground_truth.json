@@ -1,0 +1,3992 @@
+[
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 38,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 45,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 35,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 34,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 29,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 25,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 47,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 30,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 28,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "subtle",
+  "param": 0.1,
+  "unit": "ms sigma",
+  "episode": 26,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 40,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 37,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 43,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 47,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 46,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 25,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 39,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 48,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 28,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "moderate",
+  "param": 0.5,
+  "unit": "ms sigma",
+  "episode": 32,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 46,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 33,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 48,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 28,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 30,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 45,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 37,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 40,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 35,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "timestamp_jitter",
+  "severity": "obvious",
+  "param": 2.0,
+  "unit": "ms sigma",
+  "episode": 42,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 35,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 29,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 47,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 30,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 26,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 40,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 45,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 46,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 42,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "frames",
+  "episode": 33,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 47,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 29,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 45,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 35,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 40,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 46,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 33,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 39,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 48,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "frames",
+  "episode": 44,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 35,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 48,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 43,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 33,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 45,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 27,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 49,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 46,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 29,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "dropped_frames",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "frames",
+  "episode": 40,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 35,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 32,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 44,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 46,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 26,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 38,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 27,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 28,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 29,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "rows",
+  "episode": 40,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 33,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 40,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 30,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 27,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 34,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 49,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 42,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 41,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 29,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "rows",
+  "episode": 38,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 33,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 49,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 32,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 26,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 37,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 29,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 25,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 28,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 39,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "duplicated_rows",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "rows",
+  "episode": 27,
+  "expected": [
+   "TIME-002",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 48,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 32,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 39,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 33,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 41,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 47,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 42,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 40,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 49,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "swaps",
+  "episode": 38,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 34,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 47,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 25,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 27,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 40,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 38,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 39,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 46,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 49,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "moderate",
+  "param": 3,
+  "unit": "swaps",
+  "episode": 35,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 40,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 35,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 46,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 43,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 26,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 37,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 32,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 27,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 33,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "non_monotonic_ts",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "swaps",
+  "episode": 49,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 32,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 26,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 28,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 33,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 35,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 39,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 41,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 45,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 44,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "subtle",
+  "param": 1e-05,
+  "unit": "scale error",
+  "episode": 40,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 30,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 47,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 48,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 46,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 33,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 35,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 41,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 39,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 43,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "moderate",
+  "param": 0.0001,
+  "unit": "scale error",
+  "episode": 32,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 38,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 39,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 27,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 48,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 46,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 25,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 34,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 42,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 49,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "clock_drift",
+  "severity": "obvious",
+  "param": 0.001,
+  "unit": "scale error",
+  "episode": 43,
+  "expected": [
+   "TIME-001"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 34,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 33,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 32,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 28,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 43,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 40,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 35,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 30,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 45,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "subtle",
+  "param": 1.5,
+  "unit": "x p99.9",
+  "episode": 47,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 48,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 42,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 41,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 47,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 46,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 43,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 33,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 29,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 30,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "moderate",
+  "param": 3.0,
+  "unit": "x p99.9",
+  "episode": 49,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 29,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 38,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 25,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 49,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 41,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 32,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 27,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 35,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 33,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "velocity_spike",
+  "severity": "obvious",
+  "param": 10.0,
+  "unit": "x p99.9",
+  "episode": 46,
+  "expected": [
+   "JOINT-003"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 41,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 28,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 44,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 34,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 49,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 32,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 38,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 39,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 40,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "span beyond limit",
+  "episode": 46,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 47,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 38,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 43,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 25,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 40,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 48,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 33,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 39,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 35,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "span beyond limit",
+  "episode": 45,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 43,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 25,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 33,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 44,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 38,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 47,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 48,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 32,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 27,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "range_violation",
+  "severity": "obvious",
+  "param": 0.3,
+  "unit": "span beyond limit",
+  "episode": 46,
+  "expected": [
+   "JOINT-002"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 37,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 46,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 42,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 25,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 28,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 40,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 47,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 38,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 49,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "subtle",
+  "param": 30,
+  "unit": "frames",
+  "episode": 48,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 42,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 28,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 43,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 38,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 46,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 39,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 27,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 47,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 30,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "moderate",
+  "param": 90,
+  "unit": "frames",
+  "episode": 25,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 49,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 32,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 34,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 47,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 33,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 45,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 43,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 38,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 39,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "stuck_joint",
+  "severity": "obvious",
+  "param": 200,
+  "unit": "frames",
+  "episode": 35,
+  "expected": [
+   "JOINT-004"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 38,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 26,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 40,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 46,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 45,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 42,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 25,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 29,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 49,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "subtle",
+  "param": 1,
+  "unit": "samples",
+  "episode": 27,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 35,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 27,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 40,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 25,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 46,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 41,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 38,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 49,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 48,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "samples",
+  "episode": 42,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 46,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 42,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 34,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 41,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 44,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 25,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 40,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 45,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 43,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "nan_values",
+  "severity": "obvious",
+  "param": 20,
+  "unit": "samples",
+  "episode": 37,
+  "expected": [
+   "JOINT-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 28,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 49,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 29,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 41,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 48,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 43,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 42,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 33,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 34,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "subtle",
+  "param": 0.5,
+  "unit": "amplitude kept",
+  "episode": 35,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 30,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 28,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 37,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 39,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 34,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 45,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 46,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 38,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 35,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "moderate",
+  "param": 0.2,
+  "unit": "amplitude kept",
+  "episode": 44,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 49,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 26,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 30,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 39,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 25,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 41,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 40,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 42,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 44,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "gripper_flat",
+  "severity": "obvious",
+  "param": 0.0,
+  "unit": "amplitude kept",
+  "episode": 27,
+  "expected": [
+   "GRIP-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 28,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 32,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 38,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 43,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 49,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 25,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 33,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 41,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 29,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "subtle",
+  "param": 2,
+  "unit": "extra frames",
+  "episode": 35,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 25,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 42,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 38,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 48,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 29,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 45,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 40,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 44,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 37,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "moderate",
+  "param": 5,
+  "unit": "extra frames",
+  "episode": 47,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 32,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 45,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 27,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 30,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 38,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 29,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 34,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 37,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 43,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "action_state_lag",
+  "severity": "obvious",
+  "param": 10,
+  "unit": "extra frames",
+  "episode": 42,
+  "expected": [
+   "XSIG-001"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 28,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 33,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 41,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 49,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 26,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 27,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 43,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 34,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 38,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "subtle",
+  "param": 0.01,
+  "unit": "fraction cut",
+  "episode": 45,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 45,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 26,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 28,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 25,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 32,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 48,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 49,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 44,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 46,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "moderate",
+  "param": 0.05,
+  "unit": "fraction cut",
+  "episode": 37,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 34,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 43,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 30,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 45,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 42,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 46,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 47,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 32,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 44,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "truncation",
+  "severity": "obvious",
+  "param": 0.25,
+  "unit": "fraction cut",
+  "episode": 48,
+  "expected": [
+   "EPIS-001",
+   "TIME-003"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 37,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 35,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 27,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 44,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 39,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 30,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 29,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 46,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 26,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "subtle",
+  "param": 60,
+  "unit": "frames",
+  "episode": 32,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 43,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 42,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 46,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 30,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 38,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 41,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 34,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 48,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 45,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "moderate",
+  "param": 150,
+  "unit": "frames",
+  "episode": 40,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 25,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 30,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 29,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 44,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 32,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 43,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 47,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 45,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 38,
+  "expected": [
+   "EPIS-002"
+  ]
+ },
+ {
+  "fault": "idle_padding",
+  "severity": "obvious",
+  "param": 300,
+  "unit": "frames",
+  "episode": 42,
+  "expected": [
+   "EPIS-002"
+  ]
+ }
+]

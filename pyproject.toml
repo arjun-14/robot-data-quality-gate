@@ -1,0 +1,20 @@
+[project]
+name = "robot-data-quality-gate"
+version = "0.1.0"
+description = "Ingestion-time quality gate for robot manipulation datasets (LeRobot format), with a fault-injection benchmark."
+requires-python = ">=3.10"
+dependencies = ["numpy", "pandas", "pyarrow", "huggingface_hub"]
+
+[project.optional-dependencies]
+app = ["streamlit", "plotly"]
+dev = ["pytest"]
+
+[project.scripts]
+qgate = "qgate.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["qgate", "bench"]
