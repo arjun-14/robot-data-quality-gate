@@ -1,6 +1,6 @@
 MAP.md
 tickets/
-data/
+/data/
 .venv/
 __pycache__/
 *.egg-info/
