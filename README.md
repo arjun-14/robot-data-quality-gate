@@ -4,7 +4,9 @@ An ingestion-time quality gate for robot manipulation data. It checks every epis
 
 Built on the real [`lerobot/svla_so100_pickplace`](https://huggingface.co/datasets/lerobot/svla_so100_pickplace) dataset (50 episodes, 19,631 frames, SO-100 arm, Apache-2.0).
 
-<!-- TODO: dashboard screenshot + hosted app link + 90 s video link -->
+![qgate dashboard: check status history, threshold headroom and episode inspector](docs/dashboard.png)
+
+<!-- TODO: hosted app link + 90 s video link -->
 
 ## Results
 
@@ -53,7 +55,7 @@ pytest                                           # unit tests
 - **Verdicts:** structural violations (timestamps, NaN, range, frame counts, extreme velocity, stuck joints, flat gripper) **fail** = quarantine; statistical ones (velocity above limit, lag, length, idle) **warn** = human review. An episode takes its worst verdict.
 - **Thresholds come from the data**, not guesses: robust percentiles from a clean calibration set with a margin. Every threshold records whether it is sourced from the literature, derived from the data, or my own choice (see the dashboard's *Thresholds & codes* tab or `thresholds.json`).
 - **13 faults x 3 severities** (`bench/inject.py`): timestamp jitter, dropped frames, duplicated rows, non-monotonic timestamps, clock drift, velocity spike, range violation, stuck joint, NaN values, flat gripper, action/state lag, truncation, idle padding. Injection works on copies, never the originals.
-- **Dashboard** (`app/app.py`): fleet view (counts, episodes by session, fail-rate trend), episode inspector with shaded flagged frames, a *Fault lab* that injects a fault into a real episode and runs the gate live, and the benchmark.
+- **Dashboard** (`app/app.py`): two pages. *Episodes* shows verdict counts, a check × episode status history, how close each episode came to the velocity, idle and range thresholds, and an inspector that shades flagged frames and explains each finding in plain language. *Gate validation* shows the benchmark heatmap, where the gate falls short, false positives, and a *Fault lab* that injects a fault into a real episode and runs the gate live. Colour is used only for problems; light and dark themes are set in `.streamlit/config.toml`.
 
 ## What I'm unsure about
 
