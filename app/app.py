@@ -34,10 +34,9 @@ FONT = dict(family="IBM Plex Sans, system-ui, sans-serif", size=11)
 
 st.html(f"""<style>
 [data-testid="stMainBlockContainer"] {{ padding-top: 1.2rem; padding-bottom: 3rem; max-width: 1680px; }}
-.qg-top {{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:2px; }}
 .qg-brand {{ font-weight:600; font-size:17px; display:flex; align-items:center; gap:8px; }}
 .qg-brand i {{ width:10px; height:10px; border-radius:2px; background:{ACCENT}; display:inline-block; }}
-.qg-ctx {{ font-size:12.5px; opacity:.7; display:flex; gap:14px; flex-wrap:wrap; }}
+.st-key-nav [data-testid="stButtonGroup"] {{ justify-content:flex-end; }}
 .qg-eyebrow {{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; opacity:.65; font-weight:500; }}
 .qg-v {{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:28px; font-weight:500; line-height:1.15; margin-top:4px;
          display:flex; align-items:baseline; gap:8px; font-variant-numeric:tabular-nums; }}
@@ -141,6 +140,16 @@ def evidence(ep: Episode, findings, th):
                 if len(idx):
                     out.append(dict(code=code, status=st_, joint=j, iv=runs(idx, 2), text=(
                         f"<b>{JN[j]}</b> moved at up to <b>{ratio[:, j].max():.1f}×</b> its velocity limit.")))
+        elif code in ("TIME-001", "TIME-002"):
+            # recompute every bad frame (Finding.frames stops at 40); shade only when the problem is local,
+            # since jitter or drift touches nearly every frame and would just paint the whole plot
+            if code == "TIME-001":
+                bad = np.where((np.abs(ep.ts - ep.frame_index / ep.fps) > th["ts_tol"])[:-1] | (np.diff(ep.ts) <= 0))[0]
+            else:
+                bad = np.where(np.diff(ep.frame_index) != 1)[0]
+            local = len(bad) <= 0.3 * ep.n
+            out.append(dict(code=code, status=st_, joint=None, iv=runs(bad, 2) if local else [],
+                            text=f["detail"].capitalize() + ("." if local else " (spread across the episode, so not shaded).")))
         elif code == "GRIP-001":
             out.append(dict(code=code, status=st_, joint=len(JOINTS) - 1, iv=[[0, ep.n - 1]], text=f["detail"].capitalize() + "."))
         else:
@@ -269,12 +278,12 @@ def bench_heatmap():
             c = table[f][s]
             zr.append(bucket(c["flagged"] / c["n"]))
             flag = " ⚑" if c["attributed"] < c["flagged"] else ""
-            tr.append(f"<b>{c['flagged']}/{c['n']}{flag}</b><br><span style='font-size:10px'>{c['param']} {c['unit']}</span>")
+            tr.append(f"<b>{c['flagged']}/{c['n']}{flag}</b>   {c['param']} {c['unit']}")
         z.append(zr); text.append(tr)
     scale = []
     for i, col in enumerate(SEQ):
         scale += [[i / 5, col], [(i + 1) / 5, col]]
-    fig = go.Figure(go.Heatmap(z=z, x=sevs, y=[f.replace("_", " ") for f in faults], text=text, texttemplate="%{text}",
+    fig = go.Figure(go.Heatmap(z=z, x=sevs, y=[f.replace("_", " ") for f in faults], text=text, texttemplate="%{text}", textfont=dict(size=12),
                                hovertemplate="%{y}, %{x}<extra></extra>", zmin=-.5, zmax=4.5, colorscale=scale, showscale=False, xgap=3, ygap=3))
     base_layout(fig, 560, margin=dict(l=0, r=8, t=28, b=0))
     fig.update_yaxes(autorange="reversed")
@@ -283,9 +292,23 @@ def bench_heatmap():
 
 
 # ------------------------------------------------------------------ episode selection (shared by all clickable charts)
+# The page and episode live in the URL (?page=validation&ep=31) so links and the theme toggle's reload keep your place.
+PAGES = {"episodes": "Episodes", "validation": "Gate validation"}
 if "ep_sel" not in st.session_state:
     _fails = [i for i, e in EPS.items() if e["verdict"] == "fail"]
-    st.session_state["ep_sel"] = next((i for i in _fails if i >= 25), _fails[0] if _fails else 0)   # first held-out failure
+    _qp = st.query_params.get("ep", "")
+    st.session_state["ep_sel"] = int(_qp) if _qp.isdigit() and int(_qp) in EPS else \
+        next((i for i in _fails if i >= 25), _fails[0] if _fails else 0)   # first held-out failure
+if "nav" not in st.session_state:
+    st.session_state["nav"] = PAGES.get(st.query_params.get("page", ""), "Episodes")
+    st.session_state["nav_last"] = st.session_state["nav"]
+
+
+def _nav_changed():
+    # a segmented control can be clicked off; keep the current page instead of showing nothing
+    if st.session_state["nav"] is None:
+        st.session_state["nav"] = st.session_state["nav_last"]
+    st.session_state["nav_last"] = st.session_state["nav"]
 
 
 def _pick(key):
@@ -296,11 +319,39 @@ def _pick(key):
 
 
 # ------------------------------------------------------------------ page
-st.html(f"""<div class="qg-top"><div class="qg-brand"><i></i>qgate</div>
-<div class="qg-ctx"><b>{META['dataset']}</b><span>{FPS:g} fps · {len(JOINTS)} joints</span><span>thresholds calibrated on episodes 0–24</span></div></div>""")
-tab_eps, tab_val = st.tabs(["Episodes", "Gate validation"])
+top_l, top_nav, top_theme = st.columns([6, 3, .45], vertical_alignment="center")
+with top_l:
+    st.html('<div class="qg-brand"><i></i>qgate</div>')
+with top_nav:
+    st.segmented_control("Page", list(PAGES.values()), key="nav", on_change=_nav_changed, label_visibility="collapsed")
+with top_theme:
+    # Streamlit has no API to switch theme from app code. This writes the same browser setting as its own
+    # Settings menu ("stActiveTheme-<path>-v2" = "Light" | "Dark" | "System", Streamlit >= 1.50) and reloads.
+    # It relies on a Streamlit internal: if a Streamlit upgrade breaks it, use the menu's Settings > Theme instead.
+    st.html("""<button id="qg-theme" type="button" title="Switch light / dark" aria-label="Switch light or dark theme"
+      style="font:16px/1 sans-serif;width:38px;height:38px;border-radius:8px;cursor:pointer;background:transparent;
+             color:inherit;border:1px solid rgba(128,140,155,.45)">◐</button>
+    <script>
+    (() => {
+      const b = document.getElementById("qg-theme"); if (!b || b.dataset.wired) return; b.dataset.wired = "1";
+      b.addEventListener("click", () => {
+        const key = "stActiveTheme-" + window.location.pathname + "-v2";
+        let cur = null; try { cur = JSON.parse(localStorage.getItem(key)); } catch (e) {}
+        const dark = cur === "Dark" || ((cur === null || cur === "System") && matchMedia("(prefers-color-scheme: dark)").matches);
+        try { localStorage.setItem(key, JSON.stringify(dark ? "Light" : "Dark")); } catch (e) {}
+        location.reload();
+      });
+    })();
+    </script>""", unsafe_allow_javascript=True)
 
-with tab_eps:
+PAGE = st.session_state["nav"] or "Episodes"
+st.query_params["page"] = next(k for k, v in PAGES.items() if v == PAGE)
+if PAGE == "Episodes":
+    st.query_params["ep"] = str(st.session_state["ep_sel"])
+else:
+    st.query_params.pop("ep", None)
+
+if PAGE == "Episodes":
     sel = st.session_state["ep_sel"]
     failed = [i for i, e in EPS.items() if e["verdict"] == "fail"]
     c = st.columns(4)
@@ -356,7 +407,7 @@ with tab_eps:
             st.html('<div class="qg-note">All 11 checks passed.</div>')
         st.html(checklist(e["checks"]))
 
-with tab_val:
+else:
     table, sevs = BENCH["table"], ["subtle", "moderate", "obvious"]
     cells = [table[f][s] for f in table for s in sevs]
     fp = BENCH["clean_heldout"]
