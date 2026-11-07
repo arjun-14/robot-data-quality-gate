@@ -4,7 +4,7 @@ Gate validation page with the benchmark and a live fault lab.
 Reads precomputed files in app/data (see scripts/build_app_data.py) and bench/results/results.json.
 Run:  streamlit run app/app.py
 """
-import json, pathlib, sys
+import json, pathlib, sys, time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -19,6 +19,7 @@ from plotly.subplots import make_subplots
 from bench.inject import FAULTS, SEVERITIES, inject
 from qgate.checks import CODES, run_checks, velocity
 from qgate.dataset import Episode
+from qgate.live import PENDING, LiveGate
 
 st.set_page_config(page_title="qgate", layout="wide")
 
@@ -36,7 +37,8 @@ st.html(f"""<style>
 [data-testid="stMainBlockContainer"] {{ padding-top: 1.2rem; padding-bottom: 3rem; max-width: 1680px; }}
 .qg-brand {{ font-weight:600; font-size:17px; display:flex; align-items:center; gap:8px; }}
 .qg-brand i {{ width:10px; height:10px; border-radius:2px; background:{ACCENT}; display:inline-block; }}
-.st-key-nav [data-testid="stButtonGroup"] {{ justify-content:flex-end; }}
+.st-key-nav, .st-key-nav > div {{ display:flex; justify-content:flex-end; width:100%; }}
+.st-key-nav [data-testid="stButtonGroup"] {{ justify-content:flex-end; margin-left:auto; }}
 .qg-eyebrow {{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; opacity:.65; font-weight:500; }}
 .qg-v {{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:28px; font-weight:500; line-height:1.15; margin-top:4px;
          display:flex; align-items:baseline; gap:8px; font-variant-numeric:tabular-nums; }}
@@ -60,6 +62,16 @@ st.html(f"""<style>
 .qg-ckl {{ display:grid; grid-template-columns:auto 1fr auto; gap:5px 10px; font-size:12.5px; align-items:center; margin-top:6px; }}
 .qg-ckl .s {{ width:8px; height:8px; border-radius:50%; background:{NEUTRAL_LINE}; }}
 .qg-ckl .s.fail {{ background:{CRIT}; }} .qg-ckl .s.warn {{ background:{WARN}; }}
+.qg-ckl .s.pending {{ background:transparent; border:1.5px dashed {NEUTRAL_LINE}; box-sizing:border-box; }}
+.qg-ckl .off {{ opacity:.38; }}
+.qg-sum {{ display:flex; flex-wrap:wrap; gap:6px 18px; font-size:12.5px; margin:2px 0 4px; }}
+.qg-sum b {{ font-weight:600; }} .qg-sum span {{ opacity:.85; }}
+.qg-log {{ font-size:12.5px; display:grid; grid-template-columns:auto auto auto 1fr; gap:4px 10px; align-items:center; }}
+.qg-log .t {{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; opacity:.65; white-space:nowrap; }}
+.qg-live {{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; }}
+.qg-live i {{ width:8px; height:8px; border-radius:50%; background:{CRIT}; animation:qgpulse 1.2s infinite; }}
+.qg-live.off i {{ background:{NEUTRAL_LINE}; animation:none; }}
+@keyframes qgpulse {{ 50% {{ opacity:.25; }} }}
 .qg-ckl .d {{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; opacity:.6; text-align:right; }}
 .qg-ckl [title] {{ cursor:help; }}
 .qg-miss {{ padding-left:18px; margin:0; font-size:13px; }} .qg-miss li {{ margin-bottom:6px; }}
@@ -232,11 +244,16 @@ def headroom_bars(values, limit, sel, tick_fmt, name):
     return fig
 
 
-def signal_fig(ep: Episode, flags, ref: Episode | None = None, row_h=78):
+def signal_fig(ep: Episode, flags, ref: Episode | None = None, row_h=78, full: Episode | None = None):
+    """`full` (Live page): the episode being streamed; fixes both axes to it so the plot fills in left to right."""
     k = len(JOINTS)
     fig = make_subplots(rows=k, cols=1, shared_xaxes=True, vertical_spacing=0.012)
     flagged = {f["joint"] for f in flags if f["joint"] is not None}
     t = np.arange(ep.n) / FPS
+    if full is not None:
+        ref_span = np.nan_to_num(full.state)
+        fig.update_xaxes(range=[0, full.n / FPS])
+        fig.add_vline(x=max(ep.n - 1, 0) / FPS, line=dict(color=ACCENT, width=1))
     for j in range(k):
         if ref is not None:
             fig.add_trace(go.Scatter(x=np.arange(ref.n) / FPS, y=ref.state[:, j], line=dict(width=1, color=MUTED_LINE),
@@ -248,6 +265,8 @@ def signal_fig(ep: Episode, flags, ref: Episode | None = None, row_h=78):
         rng = f"{s.min():.1f} to {s.max():.1f}{unit(j)}" if len(s) else ""
         if ref is not None:
             s = np.concatenate([s, ref.state[:, j]])
+        if full is not None:
+            s = ref_span[:, j]
         if len(s):   # headroom above the data so the joint label never sits on the line
             span = (s.max() - s.min()) or 1.0
             fig.update_yaxes(range=[s.min() - .06 * span, s.max() + .42 * span], row=j + 1, col=1)
@@ -291,9 +310,43 @@ def bench_heatmap():
     return fig
 
 
+# ------------------------------------------------------------------ playback (Live and Any dataset pages)
+# One clock drives a stream: the server feeds frames to the streaming gate up to clock() * fps, and the browser
+# seeks the video to the same clock. It counts episode-seconds, so speed changes re-anchor it.
+TICK = 0.4    # seconds between dashboard refreshes; the gate still checks every frame in between
+
+
+def clock(L):
+    return L["base"] + ((time.time() - L["anchor"]) * L["speed"] if L["anchor"] is not None else 0.0)
+
+
+def synced_video(url, start, dur, base, speed, playing, aspect="4/3"):
+    """A <video> that follows the playback clock: `start` is the clip's offset inside the file (v3 packs episodes)."""
+    st.html(f"""<div style="position:relative"><video id="qgv" muted playsinline preload="auto" src="{url}"
+      style="width:100%;aspect-ratio:{aspect};border-radius:6px;background:#000;display:block;object-fit:contain"></video>
+      <div id="qgv-err" style="display:none;position:absolute;inset:0;place-items:center;text-align:center;padding:24px;
+           color:#e6eaf0;font-size:13px">Video unavailable in this browser.<br>The gate and signals below still run.</div></div>
+    <script>(() => {{
+      const v = document.getElementById("qgv"); if (!v) return;
+      v.addEventListener("error", () => {{ document.getElementById("qgv-err").style.display = "grid"; }});
+      if (window.__qgv) clearInterval(window.__qgv);
+      const start = {start:.4f}, dur = {dur:.4f}, base = {base:.4f}, speed = {speed}, playing = {str(playing).lower()};
+      const t0 = performance.now();
+      const want = () => Math.min(playing ? base + (performance.now() - t0) / 1000 * speed : base, dur - 0.02);
+      window.__qgv = setInterval(() => {{
+        if (v.readyState < 1) return;           // wait for metadata before seeking
+        v.playbackRate = speed;
+        const t = want(), on = playing && t < dur - 0.03;
+        if (Math.abs(v.currentTime - (start + t)) > 0.25) v.currentTime = start + t;
+        if (on && v.paused) v.play().catch(() => {{}});
+        if (!on && !v.paused) v.pause();
+      }}, 200);
+    }})();</script>""", unsafe_allow_javascript=True)
+
+
 # ------------------------------------------------------------------ episode selection (shared by all clickable charts)
-# The page and episode live in the URL (?page=validation&ep=31) so links and the theme toggle's reload keep your place.
-PAGES = {"episodes": "Episodes", "validation": "Gate validation"}
+# The page and episode live in the URL (?page=validation&ep=31) so a link opens the same view.
+PAGES = {"episodes": "Episodes", "live": "Live", "dataset": "Any dataset", "validation": "Gate validation"}
 if "ep_sel" not in st.session_state:
     _fails = [i for i, e in EPS.items() if e["verdict"] == "fail"]
     _qp = st.query_params.get("ep", "")
@@ -319,37 +372,20 @@ def _pick(key):
 
 
 # ------------------------------------------------------------------ page
-top_l, top_nav, top_theme = st.columns([6, 3, .45], vertical_alignment="center")
+top_l, top_nav = st.columns([2, 1], vertical_alignment="center")
 with top_l:
     st.html('<div class="qg-brand"><i></i>qgate</div>')
 with top_nav:
     st.segmented_control("Page", list(PAGES.values()), key="nav", on_change=_nav_changed, label_visibility="collapsed")
-with top_theme:
-    # Streamlit has no API to switch theme from app code. This writes the same browser setting as its own
-    # Settings menu ("stActiveTheme-<path>-v2" = "Light" | "Dark" | "System", Streamlit >= 1.50) and reloads.
-    # It relies on a Streamlit internal: if a Streamlit upgrade breaks it, use the menu's Settings > Theme instead.
-    st.html("""<button id="qg-theme" type="button" title="Switch light / dark" aria-label="Switch light or dark theme"
-      style="font:16px/1 sans-serif;width:38px;height:38px;border-radius:8px;cursor:pointer;background:transparent;
-             color:inherit;border:1px solid rgba(128,140,155,.45)">◐</button>
-    <script>
-    (() => {
-      const b = document.getElementById("qg-theme"); if (!b || b.dataset.wired) return; b.dataset.wired = "1";
-      b.addEventListener("click", () => {
-        const key = "stActiveTheme-" + window.location.pathname + "-v2";
-        let cur = null; try { cur = JSON.parse(localStorage.getItem(key)); } catch (e) {}
-        const dark = cur === "Dark" || ((cur === null || cur === "System") && matchMedia("(prefers-color-scheme: dark)").matches);
-        try { localStorage.setItem(key, JSON.stringify(dark ? "Light" : "Dark")); } catch (e) {}
-        location.reload();
-      });
-    })();
-    </script>""", unsafe_allow_javascript=True)
 
 PAGE = st.session_state["nav"] or "Episodes"
 st.query_params["page"] = next(k for k, v in PAGES.items() if v == PAGE)
 if PAGE == "Episodes":
     st.query_params["ep"] = str(st.session_state["ep_sel"])
-else:
+    st.query_params.pop("repo", None)
+elif PAGE != "Any dataset":          # that page writes its own ?repo=…&ep=…
     st.query_params.pop("ep", None)
+    st.query_params.pop("repo", None)
 
 if PAGE == "Episodes":
     sel = st.session_state["ep_sel"]
@@ -406,6 +442,397 @@ if PAGE == "Episodes":
         else:
             st.html('<div class="qg-note">All 11 checks passed.</div>')
         st.html(checklist(e["checks"]))
+
+elif PAGE == "Live":
+    MIX = "Random mix"
+    FAULT_OPTS = ["None", MIX] + list(FAULTS)
+
+    def load(L, idx, play):
+        fault, sev = L["fault"], L["sev"]
+        rng = np.random.default_rng(idx * 1009 + L["round"])
+        if fault == MIX:   # about half the episodes arrive with a random fault, like a fleet with a few bad rigs
+            fault, sev = (list(FAULTS)[int(rng.integers(len(FAULTS)))], int(rng.integers(3))) if rng.random() < .5 else ("None", 0)
+        base = episode_obj(idx)
+        src = base if fault == "None" else inject(base, fault, sev, dict(TH), rng)
+        L.update(ep=idx, src=src, gate=LiveGate(TH, FPS, src.video_frames, idx), cursor=0, base=0.0,
+                 anchor=time.time() if play else None, token=L["token"] + 1, cost=[],
+                 truth=None if fault == "None" else (fault, sev, FAULTS[fault][2]))
+
+    if "live" not in st.session_state:
+        st.session_state["live"] = L = dict(fault=MIX, sev=1, speed=1.0, auto=True, round=0, token=0, log=[], tally=[])
+        load(L, 25, play=False)
+    L = st.session_state["live"]
+
+    def _play():
+        if L["gate"].final is not None:
+            L["round"] += 1; load(L, L["ep"], play=True)
+        elif L["anchor"] is None:
+            L["anchor"] = time.time()
+        else:
+            L["base"], L["anchor"] = clock(L), None
+
+    def _restart():
+        L["round"] += 1; load(L, L["ep"], play=L["anchor"] is not None)
+
+    def _next():
+        L["round"] += 1; load(L, (L["ep"] + 1) % len(EPS), play=True)
+
+    def _ep():
+        load(L, st.session_state["lv_ep"], play=False)
+
+    def _fault():
+        L["fault"], L["sev"] = st.session_state["lv_fault"], SEVERITIES.index(st.session_state["lv_sev"])
+        load(L, L["ep"], play=False)
+
+    def _speed():
+        if st.session_state["lv_speed"] is None:          # clicked off: keep the current speed
+            st.session_state["lv_speed"] = f"{L['speed']:g}×"; return
+        L["base"] = clock(L)
+        L["anchor"] = time.time() if L["anchor"] is not None else None
+        L["speed"] = float(st.session_state["lv_speed"].rstrip("×"))
+
+    st.session_state["lv_ep"] = L["ep"]          # auto-advance moves the episode; keep the picker in step
+    playing = L["anchor"] is not None
+    c = st.columns([1.1, 1.5, 1.1, .9, .7, .7, .7, 1.1], vertical_alignment="bottom")
+    c[0].selectbox("Episode", sorted(EPS), key="lv_ep", on_change=_ep, format_func=lambda i: f"Episode {i}")
+    c[1].selectbox("Inject fault", FAULT_OPTS, key="lv_fault", index=FAULT_OPTS.index(L["fault"]), on_change=_fault,
+                   format_func=lambda f: f.replace("_", " "), help="Random mix: each episode has a 50% chance of a random fault and severity.")
+    c[2].select_slider("Severity", SEVERITIES, key="lv_sev", value=SEVERITIES[L["sev"]], on_change=_fault,
+                       disabled=L["fault"] in ("None", MIX))
+    c[3].segmented_control("Speed", ["1×", "2×", "4×"], key="lv_speed", default=f"{L['speed']:g}×", on_change=_speed)
+    c[4].button("Pause" if playing else "Play", on_click=_play, type="primary", width="stretch")
+    c[5].button("Restart", on_click=_restart, width="stretch")
+    c[6].button("Next", on_click=_next, width="stretch")
+    st.session_state.setdefault("lv_auto", L["auto"])
+    L["auto"] = c[7].toggle("Auto-advance", key="lv_auto", help="Stream the next episode when this one ends.")
+
+    gate, src = L["gate"], L["src"]
+    v_col, p_col = st.columns([1.25, 2])
+    with v_col, st.container(border=True):
+        cam = st.segmented_control("Camera", ["top", "wrist"], default="top", key="lv_cam", label_visibility="collapsed") or "top"
+        # Prefer the episode's own H.264 clip served by this app (plays in every browser); fall back to seeking
+        # into the Hub's long AV1 file if the clips were not built.
+        clip = f"app/static/clips/{cam}/ep{L['ep']:03d}.mp4"
+        if (ROOT / clip).exists() and st.get_option("server.enableStaticServing"):   # off until the server restarts
+            vurl, vstart = clip, 0.0
+        else:
+            vid = META["videos"][str(L["ep"])][cam]
+            vurl, vstart = f"{vid['url']}#t={vid['start']:.3f}", vid["start"]
+        # Rendered on full reruns only (controls, episode change); the fragments below never touch it.
+        synced_video(vurl, vstart, src.n / FPS, clock(L), L["speed"], playing)
+        truth = L["truth"]
+        inj = f"Injected: <b>{truth[0].replace('_', ' ')}</b>, {SEVERITIES[truth[1]]}. The fault is in the signals the gate reads; the video is the original recording." \
+            if truth else "Nothing injected: real recorded signals."
+        st.html(f'<div class="qg-note">{inj} The video follows the same clock as the gate, give or take network delay.</div>')
+
+    @st.fragment(run_every=TICK if playing else None)
+    def live_panel():
+        """Advance the clock: push every frame due since the last tick through the gate, then draw the state."""
+        L = st.session_state["live"]; gate, src = L["gate"], L["src"]
+        target = min(src.n, int(clock(L) * FPS) + 1)
+        t0 = time.perf_counter()
+        for k in range(L["cursor"], target):
+            for e in gate.push(src.ts[k], src.frame_index[k], src.state[k], src.action[k]):
+                L["log"].append(dict(e, ep=L["ep"]))
+        if target > L["cursor"]:
+            L["cost"].append((time.perf_counter() - t0) / (target - L["cursor"]))
+        L["cursor"] = target
+        if L["cursor"] == src.n and gate.final is None:
+            for e in gate.finish():
+                L["log"].append(dict(e, ep=L["ep"]))
+            got = {f.code for f in gate.final[1] if f.status != "pass"}
+            live_first = [f for c, (f, s) in gate.first.items()]
+            truth = L["truth"]
+            if truth:
+                outcome = "caught" if got & truth[2] else "wrong code" if got else "missed"
+            else:
+                outcome = "clean" if not got else "flagged (real data)"
+            L["tally"].append(dict(ep=L["ep"], fault=truth[0] if truth else None, sev=truth[1] if truth else None, verdict=gate.verdict,
+                                   first=min(live_first) / FPS if live_first else None, dur=src.n / FPS, outcome=outcome,
+                                   codes=sorted(got)))
+        if gate.final is not None and L["anchor"] is not None:
+            if L["auto"] and clock(L) > src.n / FPS + 1.5 * L["speed"]:   # hold the result on screen ~1.5 s
+                L["round"] += 1; load(L, (L["ep"] + 1) % len(EPS), play=True); st.rerun(scope="app")
+            elif not L["auto"]:
+                L["base"], L["anchor"] = src.n / FPS, None; st.rerun(scope="app")
+
+        n = L["cursor"]; t = n / FPS
+        live = L["anchor"] is not None and gate.final is None
+        first = min(gate.first.items(), key=lambda kv: kv[1][0], default=None)
+        cost = np.mean(L["cost"][-200:]) * 1e3 if L["cost"] else 0.0
+        st.html(f'<div class="qg-h"><span class="qg-live {"" if live else "off"}"><i></i>{"LIVE" if live else "ended" if gate.final else "paused"}</span>'
+                f'<b>Episode {L["ep"]}</b>{pill(gate.verdict)}<span>{"final verdict" if gate.final else "verdict so far"}</span></div>')
+        c = st.columns(3)
+        with c[0]: stat("Frame", f"{n}", f"of {src.n} · {t:.1f} / {src.n / FPS:.1f} s")
+        with c[1]:
+            if first:
+                code, (fr, s) = first
+                stat("First flag", f"{fr / FPS:.1f} s", f"{code} · {'at episode end' if fr >= src.n - 1 and gate.final else 'mid-episode'}", alert=True)
+            else:
+                stat("First flag", "none", "no finding yet")
+        with c[2]: stat("Gate cost", f"{cost:.2f}", f"ms per frame · budget {1000 / FPS:.0f} ms")
+        rows = []
+        for code, name in CODES.items():
+            s = gate.status[code]
+            when = f"{gate.first[code][0] / FPS:.1f} s" if code in gate.first else "waits for end" if s == PENDING else "ok so far" if not gate.final else "pass"
+            rows.append(f'<span class="s {s}"></span><span title="{gate.detail[code]}">{name}</span><span class="d">{code} · {when}</span>')
+        st.html(f'<div class="qg-ckl" style="grid-template-columns:auto 1fr auto">{"".join(rows)}</div>'
+                '<div class="qg-note">Solid = decided frame by frame · dashed = needs the whole episode (video count, lag, idle, short episode, gripper that never moved).</div>')
+
+    @st.fragment(run_every=TICK if playing else None)
+    def live_signals():
+        L = st.session_state["live"]; gate, src = L["gate"], L["src"]
+        part = gate.episode() if gate.n else None
+        flags = evidence(part, gate.findings(), TH) if part is not None and part.n > 1 else []
+        left, right = st.columns([3, 1])
+        with left, st.container(border=True):
+            head("Signals as they arrive", "joint state up to the current frame · shading = frames the gate has flagged so far")
+            if part is not None and part.n > 1:
+                st.plotly_chart(signal_fig(part, flags, row_h=58, full=src), key="lv_sig", config={"displayModeBar": False}, width="stretch")
+        with right, st.container(border=True):
+            head("Event log", "newest first")
+            ev = L["log"][-14:][::-1]
+            st.html('<div class="qg-log">' + "".join(
+                f'<span class="t">ep {e["ep"]} · {e["frame"] / FPS:.1f}s</span>{pill(e["status"])}<span class="qg-code">{e["code"]}</span>'
+                f'<span>{"escalated · " if e.get("escalated") else ""}{"at end · " if e.get("at_end") else ""}{e["detail"]}</span>'
+                for e in ev) + "</div>" if ev else '<div class="qg-note">No findings yet.</div>')
+        T = L["tally"]
+        if T:
+            with st.container(border=True):
+                inj = [x for x in T if x["fault"]]
+                caught = sum(x["outcome"] == "caught" for x in inj)
+                early = [x["first"] / x["dur"] for x in T if x["first"] is not None and x["verdict"] != "pass" and x["first"] < x["dur"] - 1 / FPS]
+                head("This session", f"{len(T)} episodes streamed · {sum(x['verdict'] == 'fail' for x in T)} quarantined · "
+                     f"injected faults caught {caught}/{len(inj)}" + (f" · flags raised mid-episode at a median {np.median(early):.0%} of the way in" if early else ""))
+                st.dataframe(pd.DataFrame([dict(Episode=x["ep"], Injected=(x["fault"] or "").replace("_", " ") + (f" ({SEVERITIES[x['sev']]})" if x["fault"] else ""),
+                                                 Verdict=STATUS[x["verdict"]][0], Outcome=x["outcome"], Codes=", ".join(x["codes"]),
+                                                 **{"First flag (s)": x["first"]}, **{"Length (s)": round(x["dur"], 1)}) for x in T[::-1]]),
+                             hide_index=True, width="stretch", height=min(36 * len(T) + 38, 260),
+                             column_config={"First flag (s)": st.column_config.NumberColumn(format="%.1f")})
+
+    with p_col, st.container(border=True):
+        live_panel()
+    live_signals()
+
+elif PAGE == "Any dataset":
+    # Stream any public LeRobot dataset from the Hub: its frames are read into memory (nothing saved), replayed on the
+    # playback clock, and checked by the structural gate (no thresholds: the checks that need them are shown as off).
+    from huggingface_hub import HfFileSystem
+    from qgate.hub import TooLarge, inspect_dataset, load_episode, video_source
+    from qgate.live import OFF
+
+    EXAMPLES = [("cedricxie/robofac-lerobot-preview", 33, "placeholder zeros"),
+                ("Chojins/chess_game_009_white", 285, "wrist stall"),
+                ("xsatvik/mixer_on_off_new_1", 0, "stale first frame"),
+                ("lerobot/svla_so100_pickplace", 36, "clean reference")]
+
+    @st.cache_data(ttl=600, show_spinner=False)
+    def hub_inspect(repo):
+        return inspect_dataset(repo, HfFileSystem())
+
+    @st.cache_data(ttl=600, max_entries=16, show_spinner=False)
+    def hub_episode(repo, idx):
+        return load_episode(hub_inspect(repo), idx, HfFileSystem())
+
+    if "ds_repo" not in st.session_state:
+        st.session_state["ds_repo"] = st.query_params.get("repo", EXAMPLES[0][0])
+        _qe = st.query_params.get("ep", "")
+        st.session_state["ds_want"] = int(_qe) if _qe.isdigit() else (EXAMPLES[0][1] if st.session_state["ds_repo"] == EXAMPLES[0][0] else None)
+    H = st.session_state.setdefault("hub", dict(repo=None, ep=None, speed=1.0, base=0.0, anchor=None, cursor=0, log=[]))
+
+    def _example(repo, ep):
+        st.session_state["ds_repo"], st.session_state["ds_want"] = repo, ep
+
+    with st.container(border=True):
+        st.text_input("LeRobot dataset on the Hugging Face Hub", key="ds_repo", placeholder="owner/name, e.g. lerobot/svla_so100_pickplace")
+        ex = st.columns(len(EXAMPLES) + 1, vertical_alignment="center")
+        ex[0].html('<div class="qg-note" style="margin:0">Examples:</div>')
+        for col, (repo, ep, label) in zip(ex[1:], EXAMPLES):
+            col.button(f"{label} · ep {ep}", key=f"ex_{repo}", on_click=_example, args=(repo, ep), help=repo, width="stretch")
+
+    repo = st.session_state["ds_repo"].strip().strip("/").removeprefix("https://huggingface.co/datasets/")
+    if not repo:
+        st.stop()
+    try:
+        with st.spinner(f"Checking {repo} on the Hub…"):
+            insp = hub_inspect(repo)
+    except Exception as ex_:
+        st.error(f"Could not reach {repo} on the Hub: {type(ex_).__name__}: {ex_}")
+        st.stop()
+    if not insp.ok:
+        st.warning(f"**{insp.step[0].upper() + insp.step[1:]}.** {insp.message}")
+        st.stop()
+
+    eps = sorted(insp.episodes)
+    if H["repo"] != repo:   # new dataset: pick the requested episode (from an example or the URL) or the first one
+        want = st.session_state.pop("ds_want", None)
+        st.session_state["ds_ep"] = want if want in insp.episodes else eps[0]
+    elif "ds_want" in st.session_state and st.session_state["ds_want"] in insp.episodes:
+        st.session_state["ds_ep"] = st.session_state.pop("ds_want")
+    cams = insp.cameras
+    sn, an = insp.state_names, insp.action_names
+    st.html('<div class="qg-sum">' + "".join(f"<span>{k} <b>{v}</b></span>" for k, v in (
+        ("LeRobot", insp.version), ("robot", insp.robot or "unknown"), ("fps", insp.fps), ("episodes", f"{len(eps):,}"),
+        ("frames", f"{insp.info.get('total_frames', sum(insp.episodes.values())):,}"), ("state", len(sn)), ("action", len(an)),
+        ("cameras", len(cams)))) + "</div>")
+
+    c = st.columns([1.4, .9, .7, .7, 2.2], vertical_alignment="bottom")
+    if len(eps) <= 5000:
+        c[0].selectbox("Episode", eps, key="ds_ep", format_func=lambda i: f"Episode {i} · {insp.episodes[i]} frames")
+    else:
+        c[0].number_input("Episode", min_value=eps[0], max_value=eps[-1], step=1, key="ds_ep")
+    ep_idx = int(st.session_state["ds_ep"])
+    if ep_idx not in insp.episodes:
+        st.warning(f"Episode {ep_idx} is not in this dataset."); st.stop()
+    st.query_params["repo"], st.query_params["ep"] = repo, str(ep_idx)
+
+    if (H["repo"], H["ep"]) != (repo, ep_idx):
+        try:
+            with st.spinner(f"Streaming episode {ep_idx} from the Hub…"):
+                src = hub_episode(repo, ep_idx)
+        except TooLarge as ex_:
+            st.warning(str(ex_)); st.stop()
+        except Exception as ex_:
+            st.error(f"Could not read episode {ep_idx}: {type(ex_).__name__}: {ex_}"); st.stop()
+        H.update(repo=repo, ep=ep_idx, src=src, gate=LiveGate(None, src.fps, idx=ep_idx), cursor=0, base=0.0, anchor=None, log=[])
+    src, gate = H["src"], H["gate"]
+    dur = src.n / src.fps
+
+    def _hplay():
+        if H["gate"].final is not None:
+            H.update(gate=LiveGate(None, H["src"].fps, idx=H["ep"]), cursor=0, base=0.0, anchor=time.time(), log=[])
+        elif H["anchor"] is None:
+            H["anchor"] = time.time()
+        else:
+            H["base"], H["anchor"] = clock(H), None
+
+    def _hrestart():
+        H.update(gate=LiveGate(None, H["src"].fps, idx=H["ep"]), cursor=0, base=0.0, log=[],
+                 anchor=time.time() if H["anchor"] is not None else None)
+
+    def _hspeed():
+        if st.session_state["ds_speed"] is None:
+            st.session_state["ds_speed"] = f"{H['speed']:g}×"; return
+        H["base"] = clock(H)
+        H["anchor"] = time.time() if H["anchor"] is not None else None
+        H["speed"] = float(st.session_state["ds_speed"].rstrip("×"))
+
+    playing = H["anchor"] is not None
+    c[1].segmented_control("Speed", ["1×", "2×", "4×"], key="ds_speed", default=f"{H['speed']:g}×", on_change=_hspeed)
+    c[2].button("Pause" if playing else "Play", on_click=_hplay, type="primary", width="stretch")
+    c[3].button("Restart", on_click=_hrestart, width="stretch")
+    pairable = sn == an
+    default_ch = list(range(min(8, len(sn))))
+    chans = c[4].multiselect("Channels to plot", list(range(len(sn))), default=default_ch, key=f"ds_ch_{repo}",
+                             format_func=lambda j: sn[j], max_selections=12) or default_ch
+
+    v_col, p_col = st.columns([1.25, 2])
+    with v_col, st.container(border=True):
+        if cams:
+            cam = cams[0]
+            if len(cams) > 1:
+                cam = st.segmented_control("Camera", cams, default=cams[0], key=f"ds_cam_{repo}", label_visibility="collapsed",
+                                           format_func=lambda k: k.split(".")[-1]) or cams[0]
+            url, vstart, _ = video_source(insp, ep_idx, cam)
+            shape = insp.info["features"][cam].get("shape") or [480, 640, 3]
+            h, w = (shape[1], shape[2]) if len(shape) == 3 and shape[0] in (1, 3) else (shape[0], shape[1])
+            codec = (insp.info["features"][cam].get("info") or {}).get("video.codec", "unknown codec")
+            synced_video(url, vstart, dur, clock(H), H["speed"], playing, aspect=f"{w}/{h}")
+            st.html(f'<div class="qg-note">{cam.split(".")[-1]} camera · {codec} · streamed from the Hub, follows the gate\'s clock.</div>')
+        else:
+            st.html('<div class="qg-note">This dataset has no video.</div>')
+
+    def hub_fig(part, flags_iv, end_flag):
+        """State channels (solid) with the commanded action (dashed) when state and action share names."""
+        k = len(chans)
+        fig = make_subplots(rows=k, cols=1, shared_xaxes=True, vertical_spacing=0.012)
+        t = np.arange(part.n) / src.fps
+        for r, j in enumerate(chans):
+            full = np.concatenate([src.state[:, j], src.action[:, j]] if pairable else [src.state[:, j]])
+            full = full[np.isfinite(full)]
+            if pairable:
+                fig.add_trace(go.Scatter(x=t, y=part.action[:, j], line=dict(width=1, color=MUTED_LINE, dash="dot"),
+                                         name=f"{sn[j]} (action)", hovertemplate="%{y:.3g}"), row=r + 1, col=1)
+            fig.add_trace(go.Scatter(x=t, y=part.state[:, j], line=dict(width=1.5, color=ACCENT), name=sn[j],
+                                     hovertemplate="%{y:.3g}"), row=r + 1, col=1)
+            if len(full):
+                span = (full.max() - full.min()) or 1.0
+                fig.update_yaxes(range=[full.min() - .06 * span, full.max() + .42 * span], row=r + 1, col=1)
+            fig.add_annotation(xref=f"x{r + 1 if r else ''} domain", yref=f"y{r + 1 if r else ''} domain", x=0, y=1, xanchor="left",
+                               yanchor="top", text=f"<b>{sn[j]}</b>", showarrow=False, font=dict(size=11.5))
+            fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, row=r + 1, col=1)
+            for status, s0, e0 in flags_iv:
+                fig.add_vrect(x0=s0 / src.fps, x1=max(e0, s0 + 1) / src.fps, fillcolor=FLAG_FILL[status], line_width=0,
+                              layer="below", row=r + 1, col=1)
+        if end_flag:
+            fig.add_vrect(x0=0, x1=dur, fillcolor=FLAG_FILL["fail"], line_width=0, layer="below")
+        fig.add_vline(x=max(part.n - 1, 0) / src.fps, line=dict(color=ACCENT, width=1))
+        base_layout(fig, 58 * k + 30, hovermode="x unified", hoversubplots="axis", margin=dict(l=0, r=8, t=4, b=0))
+        fig.update_xaxes(range=[0, dur], showgrid=True, gridcolor=NEUTRAL, zeroline=False)
+        fig.update_xaxes(ticksuffix=" s", row=k, col=1)
+        return fig
+
+    @st.fragment(run_every=TICK if playing else None)
+    def hub_panel():
+        H = st.session_state["hub"]; gate, src = H["gate"], H["src"]
+        target = min(src.n, int(clock(H) * src.fps) + 1)
+        for k in range(H["cursor"], target):
+            H["log"] += gate.push(src.ts[k], src.frame_index[k], src.state[k], src.action[k])
+        H["cursor"] = target
+        if H["cursor"] == src.n and gate.final is None:
+            H["log"] += gate.finish()
+        if gate.final is not None and H["anchor"] is not None:   # stop ticking once the episode has played out
+            H["base"], H["anchor"] = src.n / src.fps, None
+            st.rerun(scope="app")
+        n = H["cursor"]
+        live = H["anchor"] is not None and gate.final is None
+        st.html(f'<div class="qg-h"><span class="qg-live {"" if live else "off"}"><i></i>{"LIVE" if live else "ended" if gate.final else "paused"}</span>'
+                f'<b>Episode {H["ep"]}</b>{pill(gate.verdict)}<span>{"final verdict" if gate.final else "verdict so far"}</span></div>')
+        first = min(gate.first.items(), key=lambda kv: kv[1][0], default=None)
+        cc = st.columns(2)
+        with cc[0]: stat("Frame", f"{n}", f"of {src.n} · {n / src.fps:.1f} / {src.n / src.fps:.1f} s")
+        with cc[1]:
+            if first:
+                code, (fr, s) = first
+                stat("First flag", f"{fr / src.fps:.1f} s", f"{code} · {'at episode end' if gate.final and fr >= src.n - 1 else 'mid-episode'}", alert=True)
+            else:
+                stat("First flag", "none", "no finding yet")
+        active = [c_ for c_, s in gate.status.items() if s != OFF]
+        rows = []
+        for code, name in CODES.items():
+            s = gate.status[code]
+            if s == OFF:
+                rows.append(f'<span class="s off"></span><span class="off">{name}</span><span class="d off">{code} · off</span>')
+                continue
+            when = f"{gate.first[code][0] / src.fps:.1f} s" if code in gate.first else (gate.detail[code] or "ok so far") if s == PENDING else "ok so far" if not gate.final else "pass"
+            rows.append(f'<span class="s {s}"></span><span title="{gate.detail[code]}">{name}</span><span class="d">{code} · {when}</span>')
+        st.html(f'<div class="qg-ckl">{"".join(rows)}</div><div class="qg-note">{len(active)} of {len(CODES)} checks active. '
+                "The others need thresholds calibrated for this robot and are off for now. Dashed = decided at episode end.</div>")
+
+    @st.fragment(run_every=TICK if playing else None)
+    def hub_signals():
+        H = st.session_state["hub"]; gate = H["gate"]
+        left, right = st.columns([3, 1])
+        with left, st.container(border=True):
+            head("Signals as they arrive", ("state solid · commanded action dotted" if pairable else
+                                            "state only: state and action channels differ, so the commanded action is not overlaid")
+                 + " · shading = frames the gate flagged")
+            if gate.n > 1:
+                iv = [(gate.status[c_], a, b) for c_ in ("TIME-001", "TIME-002", "JOINT-001") if gate.status[c_] in FLAG_FILL
+                      for a, b in runs(sorted(set(gate.frames[c_])))]
+                st.plotly_chart(hub_fig(gate.episode(), iv, gate.status["JOINT-005"] == "fail"), key="ds_sig",
+                                config={"displayModeBar": False}, width="stretch")
+        with right, st.container(border=True):
+            head("Event log", "newest first")
+            ev = H["log"][-14:][::-1]
+            st.html('<div class="qg-log">' + "".join(
+                f'<span class="t">{e["frame"] / H["src"].fps:.1f}s</span>{pill(e["status"])}<span class="qg-code">{e["code"]}</span>'
+                f'<span>{"at end · " if e.get("at_end") else ""}{e["detail"]}</span>' for e in ev) + "</div>"
+                if ev else '<div class="qg-note">No findings yet.</div>')
+
+    with p_col, st.container(border=True):
+        hub_panel()
+    hub_signals()
 
 else:
     table, sevs = BENCH["table"], ["subtle", "moderate", "obvious"]

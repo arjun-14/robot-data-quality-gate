@@ -25,16 +25,22 @@ class Episode:
 
 
 def load_dataset(root: str):
-    """Return (info dict, joint names, list[Episode])."""
+    """Return (info dict, joint names, list[Episode]). Reads LeRobot v3.0 and v2.x layouts.
+
+    Video frame counts come from v3's per-episode video metadata; v2.x has none, so TIME-003 is skipped there.
+    """
     info = json.load(open(os.path.join(root, "meta", "info.json")))
     fps = float(info["fps"])
     names = info["features"]["observation.state"]["names"]
+    if isinstance(names, dict):              # older v2.0 datasets: {"motors": [...]}
+        names = next(iter(names.values()))
     files = sorted(glob.glob(os.path.join(root, "data", "**", "*.parquet"), recursive=True))
     if not files:
         raise FileNotFoundError(f"no parquet files under {root}/data (run scripts/fetch_data.py)")
-    df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+    cols = ["episode_index", "frame_index", "timestamp", "observation.state", "action"]
+    df = pd.concat([pd.read_parquet(f, columns=cols) for f in files], ignore_index=True)
     meta_files = sorted(glob.glob(os.path.join(root, "meta", "episodes", "**", "*.parquet"), recursive=True))
-    meta = pd.concat([pd.read_parquet(f) for f in meta_files]).set_index("episode_index")
+    meta = pd.concat([pd.read_parquet(f) for f in meta_files]).set_index("episode_index") if meta_files else pd.DataFrame()
     cams = sorted({c.split("/")[1] for c in meta.columns if c.startswith("videos/") and c.endswith("/from_timestamp")})
     episodes = []
     for idx, g in df.groupby("episode_index"):

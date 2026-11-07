@@ -16,6 +16,7 @@ CODES = {
     "JOINT-002": "range limit",
     "JOINT-003": "velocity spike",
     "JOINT-004": "stuck joint",
+    "JOINT-005": "no signal",
     "GRIP-001": "flat gripper",
     "XSIG-001": "action/state lag",
     "EPIS-001": "episode length",
@@ -132,10 +133,23 @@ def idle(ep, th):
     return _f("EPIS-002", f > th["idle_max"], f"{f:.0%} idle > {th['idle_max']:.0%}", f"{f:.0%} idle", warn=True)
 
 
-ALL_CHECKS = [time_grid, frame_continuity, video_count, nan_inf, range_limit, vel_spike, stuck, flat_gripper, lag, length, idle]
+def no_signal(ep, th):
+    """State or action never changes in any channel: a placeholder (e.g. zeros) or a dead stream, not robot data."""
+    dead = [name for name, x in (("state", ep.state), ("action", ep.action))
+            if len(x) and (np.ptp(np.nan_to_num(x), axis=0) == 0).all()]
+    zeros = all(not np.nan_to_num(x).any() for x in (ep.state, ep.action))
+    return _f("JOINT-005", bool(dead), ("state and action are all zeros (placeholder or missing data)" if zeros else
+              f"{' and '.join(dead)} never change{'s' if len(dead) == 1 else ''} (placeholder or missing data)"), "signals change")
 
 
-def run_checks(ep, th):
-    findings = [c(ep, th) for c in ALL_CHECKS]
+ALL_CHECKS = [time_grid, frame_continuity, video_count, nan_inf, range_limit, vel_spike, stuck, flat_gripper, lag, length, idle,
+              no_signal]
+# Checks that need no calibrated thresholds (ts_tol is LeRobot's own constant): usable on any LeRobot dataset as-is.
+STRUCTURAL = [time_grid, frame_continuity, nan_inf, no_signal]
+STRUCTURAL_TH = {"ts_tol": 1e-4}
+
+
+def run_checks(ep, th, checks=None):
+    findings = [c(ep, th) for c in (checks or ALL_CHECKS)]
     worst = max(findings, key=lambda f: RANK[f.status]).status
     return worst, findings

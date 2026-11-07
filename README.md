@@ -45,6 +45,7 @@ python scripts/fetch_data.py data/so100          # metadata + parquet only, a fe
 qgate check data/so100                           # exit code 1 if any episode fails
 qgate bench data/so100                           # rerun the fault-injection benchmark
 pip install -e ".[app]" && python scripts/build_app_data.py data/so100
+python scripts/build_clips.py data/so100         # per-episode H.264 clips for the Live page (needs the videos + ffmpeg)
 streamlit run app/app.py                         # dashboard
 pytest                                           # unit tests
 ```
@@ -55,7 +56,9 @@ pytest                                           # unit tests
 - **Verdicts:** structural violations (timestamps, NaN, range, frame counts, extreme velocity, stuck joints, flat gripper) **fail** = quarantine; statistical ones (velocity above limit, lag, length, idle) **warn** = human review. An episode takes its worst verdict.
 - **Thresholds come from the data**, not guesses: robust percentiles from a clean calibration set with a margin. Every threshold records whether it is sourced from the literature, derived from the data, or my own choice (see the dashboard's *Thresholds & codes* tab or `thresholds.json`).
 - **13 faults x 3 severities** (`bench/inject.py`): timestamp jitter, dropped frames, duplicated rows, non-monotonic timestamps, clock drift, velocity spike, range violation, stuck joint, NaN values, flat gripper, action/state lag, truncation, idle padding. Injection works on copies, never the originals.
-- **Dashboard** (`app/app.py`): two pages. *Episodes* shows verdict counts, a check × episode status history, how close each episode came to the velocity, idle and range thresholds, and an inspector that shades flagged frames and explains each finding in plain language. *Gate validation* shows the benchmark heatmap, where the gate falls short, false positives, and a *Fault lab* that injects a fault into a real episode and runs the gate live. Colour is used only for problems; light and dark themes are set in `.streamlit/config.toml`.
+- **Live replay** (`qgate/live.py`, dashboard *Live* page): episodes are streamed frame by frame at 30 fps against the episode's video from the Hub, optionally with injected faults. The gate raises a finding on the frame where it becomes true (e.g. episode 36's range violation at 2.5 s of 14.7 s) at about 0.2 ms per frame; video count, lag, idle and short-episode checks wait for the episode to end. The final streamed verdict equals the batch verdict (`tests/test_live.py`).
+- **Any dataset** (`qgate/hub.py`, dashboard *Any dataset* page): type any public LeRobot dataset (v2.0, v2.1 or v3.0) and stream one of its episodes straight from the Hub, with its video. Only that episode's state/action columns are read into memory; nothing is saved. Only the checks that need no calibrated thresholds run there (timestamps, frame index, NaN, and `JOINT-005` no signal, which catches placeholder zeros such as `cedricxie/robofac-lerobot-preview` episodes 32-49); the rest show as off.
+- **Dashboard** (`app/app.py`): four pages. *Episodes* shows verdict counts, a check × episode status history, how close each episode came to the velocity, idle and range thresholds, and an inspector that shades flagged frames and explains each finding in plain language. *Gate validation* shows the benchmark heatmap, where the gate falls short, false positives, and a *Fault lab* that injects a fault into a real episode and runs the gate live. Colour is used only for problems; light and dark themes are set in `.streamlit/config.toml`.
 
 ## What I'm unsure about
 
