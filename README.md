@@ -1,3 +1,14 @@
+---
+title: qgate
+emoji: 🤖
+colorFrom: blue
+colorTo: gray
+sdk: docker
+app_port: 8501
+pinned: false
+short_description: Quality gate for LeRobot datasets on the Hugging Face Hub
+---
+
 # robot-data-quality-gate
 
 A quality gate for robot manipulation data. Type any public LeRobot dataset on the Hugging Face Hub (v2.0, v2.1 or v3.0) and it checks every episode, gives each a **pass / warn / fail** verdict with stable taxonomy codes, and lets you open any episode to see its video, its state and action signals, and the stretches the checks flagged.
