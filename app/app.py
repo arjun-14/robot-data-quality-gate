@@ -17,7 +17,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 from plotly.subplots import make_subplots
 
 from bench.inject import FAULTS, SEVERITIES, inject
-from qgate.checks import CODES, run_checks, velocity
+from qgate.checks import CODES, GATE_CODES, first_move, run_checks, velocity
 from qgate.dataset import Episode
 from qgate.live import PENDING, LiveGate
 
@@ -63,7 +63,6 @@ st.html(f"""<style>
 .qg-ckl .s {{ width:8px; height:8px; border-radius:50%; background:{NEUTRAL_LINE}; }}
 .qg-ckl .s.fail {{ background:{CRIT}; }} .qg-ckl .s.warn {{ background:{WARN}; }}
 .qg-ckl .s.pending {{ background:transparent; border:1.5px dashed {NEUTRAL_LINE}; box-sizing:border-box; }}
-.qg-ckl .off {{ opacity:.38; }}
 .qg-sum {{ display:flex; flex-wrap:wrap; gap:6px 18px; font-size:12.5px; margin:2px 0 4px; }}
 .qg-sum b {{ font-weight:600; }} .qg-sum span {{ opacity:.85; }}
 .qg-log {{ font-size:12.5px; display:grid; grid-template-columns:auto auto auto 1fr; gap:4px 10px; align-items:center; }}
@@ -202,7 +201,7 @@ def base_layout(fig, height, **kw):
 
 # ------------------------------------------------------------------ charts
 def status_history(sel):
-    codes = list(CODES)
+    codes = list(GATE_CODES)
     ids = sorted(EPS)
     lv = {"pass": 0, "warn": 1, "fail": 2}
     z, text = [], []
@@ -572,8 +571,8 @@ elif PAGE == "Live":
                 stat("First flag", "none", "no finding yet")
         with c[2]: stat("Gate cost", f"{cost:.2f}", f"ms per frame · budget {1000 / FPS:.0f} ms")
         rows = []
-        for code, name in CODES.items():
-            s = gate.status[code]
+        for code, s in gate.status.items():
+            name = CODES[code]
             when = f"{gate.first[code][0] / FPS:.1f} s" if code in gate.first else "waits for end" if s == PENDING else "ok so far" if not gate.final else "pass"
             rows.append(f'<span class="s {s}"></span><span title="{gate.detail[code]}">{name}</span><span class="d">{code} · {when}</span>')
         st.html(f'<div class="qg-ckl" style="grid-template-columns:auto 1fr auto">{"".join(rows)}</div>'
@@ -616,15 +615,18 @@ elif PAGE == "Live":
 
 elif PAGE == "Any dataset":
     # Stream any public LeRobot dataset from the Hub: its frames are read into memory (nothing saved), replayed on the
-    # playback clock, and checked by the structural gate (no thresholds: the checks that need them are shown as off).
+    # playback clock, and checked by the universal checks (no thresholds; each caught real faults on the Hub, ticket T8).
     from huggingface_hub import HfFileSystem
     from qgate.hub import TooLarge, inspect_dataset, load_episode, video_source
-    from qgate.live import OFF
 
-    EXAMPLES = [("cedricxie/robofac-lerobot-preview", 33, "placeholder zeros"),
-                ("Chojins/chess_game_009_white", 285, "wrist stall"),
-                ("xsatvik/mixer_on_off_new_1", 0, "stale first frame"),
-                ("lerobot/svla_so100_pickplace", 36, "clean reference")]
+    # one per check, each from a different dataset (only that check fires, except too short: every sub-1 s episode
+    # in the Hub sample is also static)
+    EXAMPLES = [("samsitol/so100_peg01", 19, "no signal"),
+                ("apayan/so100_ball8", 28, "too short"),
+                ("maux/so100_test", 4, "idle start"),
+                ("acrampette/third_arm_01", 7, "idle end"),
+                ("cedricxie/robofac-lerobot-preview", 14, "state copied"),
+                ("lerobot/svla_so100_pickplace", 36, "clean")]
 
     @st.cache_data(ttl=600, show_spinner=False)
     def hub_inspect(repo):
@@ -648,7 +650,7 @@ elif PAGE == "Any dataset":
         ex = st.columns(len(EXAMPLES) + 1, vertical_alignment="center")
         ex[0].html('<div class="qg-note" style="margin:0">Examples:</div>')
         for col, (repo, ep, label) in zip(ex[1:], EXAMPLES):
-            col.button(f"{label} · ep {ep}", key=f"ex_{repo}", on_click=_example, args=(repo, ep), help=repo, width="stretch")
+            col.button(f"{label} · ep {ep}", key=f"ex_{repo}_{ep}", on_click=_example, args=(repo, ep), help=repo, width="stretch")
 
     repo = st.session_state["ds_repo"].strip().strip("/").removeprefix("https://huggingface.co/datasets/")
     if not repo:
@@ -797,17 +799,13 @@ elif PAGE == "Any dataset":
                 stat("First flag", f"{fr / src.fps:.1f} s", f"{code} · {'at episode end' if gate.final and fr >= src.n - 1 else 'mid-episode'}", alert=True)
             else:
                 stat("First flag", "none", "no finding yet")
-        active = [c_ for c_, s in gate.status.items() if s != OFF]
         rows = []
-        for code, name in CODES.items():
-            s = gate.status[code]
-            if s == OFF:
-                rows.append(f'<span class="s off"></span><span class="off">{name}</span><span class="d off">{code} · off</span>')
-                continue
+        for code, s in gate.status.items():
+            name = CODES[code]
             when = f"{gate.first[code][0] / src.fps:.1f} s" if code in gate.first else (gate.detail[code] or "ok so far") if s == PENDING else "ok so far" if not gate.final else "pass"
             rows.append(f'<span class="s {s}"></span><span title="{gate.detail[code]}">{name}</span><span class="d">{code} · {when}</span>')
-        st.html(f'<div class="qg-ckl">{"".join(rows)}</div><div class="qg-note">{len(active)} of {len(CODES)} checks active. '
-                "The others need thresholds calibrated for this robot and are off for now. Dashed = decided at episode end.</div>")
+        st.html(f'<div class="qg-ckl">{"".join(rows)}</div><div class="qg-note">Checks that work on any LeRobot dataset, using only '
+                "state and action. All are decided when the episode ends (dashed until then).</div>")
 
     @st.fragment(run_every=TICK if playing else None)
     def hub_signals():
@@ -818,9 +816,13 @@ elif PAGE == "Any dataset":
                                             "state only: state and action channels differ, so the commanded action is not overlaid")
                  + " · shading = frames the gate flagged")
             if gate.n > 1:
-                iv = [(gate.status[c_], a, b) for c_ in ("TIME-001", "TIME-002", "JOINT-001") if gate.status[c_] in FLAG_FILL
-                      for a, b in runs(sorted(set(gate.frames[c_])))]
-                st.plotly_chart(hub_fig(gate.episode(), iv, gate.status["JOINT-005"] == "fail"), key="ds_sig",
+                part, iv = gate.episode(), []
+                if gate.status["EPIS-004"] in FLAG_FILL:              # shade the still stretch to trim
+                    iv.append((gate.status["EPIS-004"], 0, first_move(part)))
+                if gate.status["EPIS-005"] in FLAG_FILL:
+                    iv.append((gate.status["EPIS-005"], part.n - first_move(part, from_end=True), part.n))
+                whole = any(gate.status[c_] == "fail" for c_ in ("JOINT-005", "EPIS-003", "XSIG-002"))
+                st.plotly_chart(hub_fig(part, iv, whole), key="ds_sig",
                                 config={"displayModeBar": False}, width="stretch")
         with right, st.container(border=True):
             head("Event log", "newest first")

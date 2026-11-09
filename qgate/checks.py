@@ -19,8 +19,12 @@ CODES = {
     "JOINT-005": "no signal",
     "GRIP-001": "flat gripper",
     "XSIG-001": "action/state lag",
+    "XSIG-002": "state copied from action",
     "EPIS-001": "episode length",
     "EPIS-002": "idle fraction",
+    "EPIS-003": "too short",
+    "EPIS-004": "idle start",
+    "EPIS-005": "idle end",
 }
 
 
@@ -142,11 +146,69 @@ def no_signal(ep, th):
               f"{' and '.join(dead)} never change{'s' if len(dead) == 1 else ''} (placeholder or missing data)"), "signals change")
 
 
+def too_short(ep, th):
+    """Under one second of frames: a recording started and stopped by mistake, nothing to learn from."""
+    s = ep.n / ep.fps
+    return _f("EPIS-003", ep.n < ep.fps, f"only {ep.n} frame{'s' if ep.n != 1 else ''} ({s:.2f} s), under 1 s", f"{s:.1f} s")
+
+
+# the robot "moves" once any channel is this fraction of the episode's largest channel range away from its start value.
+# Not each channel's own range: a joint that barely moves has a tiny range, so an operator brushing it would count
+# (maux/so100_test ep 4: 0.26 deg wrist twitch at 6 s, real start at 21.6 s).
+IDLE_MOVE = 0.02
+IDLE_MAX_S = 3.0     # longest still stretch at either end before warning (research T8's choice, not sourced)
+
+
+def first_move(ep, from_end=False):
+    """Frames before the first (or after the last) frame where any state/action channel has moved; None if nothing moves."""
+    X = np.hstack([np.nan_to_num(ep.state), np.nan_to_num(ep.action)])
+    if from_end:
+        X = X[::-1]
+    moving = (np.abs(X - X[0]) > IDLE_MOVE * np.ptp(X, axis=0).max()).any(axis=1)
+    return int(np.argmax(moving)) if moving.any() else None
+
+
+def idle_start(ep, th):
+    """Robot still for more than 3 s before the demonstration starts: teaches the policy to wait at the start pose."""
+    k = first_move(ep)
+    if k is None:
+        return Finding("EPIS-004", PASS, "nothing moves (see no signal)")
+    return _f("EPIS-004", k / ep.fps > IDLE_MAX_S, f"still for the first {k / ep.fps:.1f} s; trim the first {k} frames",
+              f"moves after {k / ep.fps:.1f} s", frames=range(k), warn=True)
+
+
+def idle_end(ep, th):
+    """Robot parked for more than 3 s after the demonstration ends (often the recording timer running out)."""
+    k = first_move(ep, from_end=True)
+    if k is None:
+        return Finding("EPIS-005", PASS, "nothing moves (see no signal)")
+    return _f("EPIS-005", k / ep.fps > IDLE_MAX_S, f"still for the last {k / ep.fps:.1f} s; trim the last {k} frames",
+              f"still for {k / ep.fps:.1f} s at the end", frames=range(ep.n - k, ep.n), warn=True)
+
+
+def state_copy(ep, th, atol=1e-6):
+    """State is a copy of action, or action is the recorded state shifted one frame: the policy would learn to copy its input."""
+    S, A = np.nan_to_num(ep.state), np.nan_to_num(ep.action)
+    if S.shape != A.shape or ep.n < 2:
+        return Finding("XSIG-002", PASS, "state and action differ in width; not comparable")
+    if (np.ptp(S, axis=0) == 0).all() or (np.ptp(A, axis=0) == 0).all():
+        return Finding("XSIG-002", PASS, "nothing moves (see no signal)")
+    how = ("state is identical to action" if np.allclose(S, A, atol=atol) else
+           "action is the next frame's state" if np.allclose(A[:-1], S[1:], atol=atol) else
+           "action is the previous frame's state" if np.allclose(A[1:], S[:-1], atol=atol) else None)
+    return _f("XSIG-002", how is not None, f"{how} on every frame (copied, not recorded separately)",
+              "state and action recorded separately")
+
+
 ALL_CHECKS = [time_grid, frame_continuity, video_count, nan_inf, range_limit, vel_spike, stuck, flat_gripper, lag, length, idle,
               no_signal]
 # Checks that need no calibrated thresholds (ts_tol is LeRobot's own constant): usable on any LeRobot dataset as-is.
-STRUCTURAL = [time_grid, frame_continuity, nan_inf, no_signal]
 STRUCTURAL_TH = {"ts_tol": 1e-4}
+# Checks shown on the Any dataset page: need no thresholds and each caught real faults in the Hub sample
+# (tickets/T8-research-state-action-checks.md). TIME-001/002 and JOINT-001 never fired on Hub data, so they are not here.
+UNIVERSAL = [no_signal, too_short, idle_start, idle_end, state_copy]
+UNIVERSAL_CODES = ("JOINT-005", "EPIS-003", "EPIS-004", "EPIS-005", "XSIG-002")
+GATE_CODES = tuple(c for c in CODES if c not in UNIVERSAL_CODES or c == "JOINT-005")   # codes ALL_CHECKS reports
 
 
 def run_checks(ep, th, checks=None):

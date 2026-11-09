@@ -78,24 +78,25 @@ def test_placeholder_zeros_fail_no_signal_at_episode_end():
     assert g.status["JOINT-005"] == "fail" and g.verdict == "fail"
 
 
-def test_duplicated_frame_is_flagged_on_that_frame_without_thresholds():
-    ep = make_episode(0, n=120)
-    ep = inject(ep, "duplicated_rows", 0, {}, np.random.default_rng(3))      # one row written twice
-    dup = int(np.where(np.diff(ep.frame_index) == 0)[0][0]) + 1
-    g = LiveGate(None, ep.fps)
-    events = push_all(g, ep)
-    # the repeated row repeats its timestamp too, so both timing checks fire on that frame and nothing else does
-    assert sorted((e["code"], e["frame"]) for e in events) == [("TIME-001", dup), ("TIME-002", dup)]
-    assert g.status["JOINT-003"] == "off" and g.status["JOINT-002"] == "off"
+def universal_cases(th):
+    from tests.test_universal import moving_then_still, still_then_moving
+    yield from cases(th)
+    yield "short", make_episode(0, n=20)
+    yield "idle start", still_then_moving(120)
+    yield "idle end", moving_then_still(150)
+    copy = make_episode(1); copy.state = copy.action.copy()
+    yield "state copy", copy
 
 
-def test_structural_mode_agrees_with_batch_structural_checks(th):
-    from qgate.checks import STRUCTURAL, STRUCTURAL_TH
-    for name, ep in cases(th):
+def test_threshold_free_mode_lists_only_universal_checks_and_agrees_with_batch(th):
+    from qgate.checks import STRUCTURAL_TH, UNIVERSAL
+    for name, ep in universal_cases(th):
         g = LiveGate(None, ep.fps)
         online = push_all(g, ep)
+        verdict, findings = run_checks(ep, STRUCTURAL_TH, UNIVERSAL)
+        assert set(g.status) == {f.code for f in findings}, name          # nothing greyed out, nothing extra
+        assert {c["code"] for c in g.findings()} == set(g.status), name
         g.finish()
-        verdict, findings = run_checks(ep, STRUCTURAL_TH, STRUCTURAL)
         assert g.verdict == verdict, name
         final = {f.code: f.status for f in findings}
         assert all(RANK[e["status"]] <= RANK[final[e["code"]]] for e in online), name
