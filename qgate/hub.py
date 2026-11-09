@@ -5,7 +5,10 @@ LocalFileSystem in tests. Reads land in memory; nothing is written to disk.
 """
 from __future__ import annotations
 import json
+import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from .checks import dataset_conventions, relax
 from .dataset import Episode
 
 SUPPORTED = ("v2.0", "v2.1", "v3.0")
@@ -96,7 +99,7 @@ def inspect_dataset(repo: str, fs, base: str = "datasets") -> Inspection:
     return Inspection(True, info=info, episodes=episodes, meta=meta.set_index("episode_index", drop=False), repo=repo)
 
 
-MAX_BYTES = 50_000_000
+MAX_BYTES = 200_000_000
 COLUMNS = ["episode_index", "frame_index", "timestamp", "observation.state", "action"]
 OPTIONAL = ("frame_index", "timestamp")
 
@@ -140,10 +143,31 @@ def _project(insp: Inspection, pf):
     return sk, ak, [sk if c == "observation.state" else ak if c == "action" else c for c in cols]
 
 
-def _projected_bytes(pf, cols) -> int:
+def _projected_bytes(pf, cols, groups=None) -> int:
+    """Compressed bytes of `cols` in the given row groups (default: all of them)."""
     md = pf.metadata
-    return sum(md.row_group(g).column(j).total_compressed_size for g in range(md.num_row_groups)
+    return sum(md.row_group(g).column(j).total_compressed_size for g in (range(md.num_row_groups) if groups is None else groups)
                for j in range(md.num_columns) if md.row_group(g).column(j).path_in_schema.split(".")[0] in cols)
+
+
+def row_groups_by_episode(lengths: dict, group_rows: list):
+    """episode index -> ids of the row groups whose rows overlap it, for one data file.
+
+    `lengths` is the file's episodes in stored order (episode index -> frames), `group_rows` the rows in each row group.
+    None when the two disagree on the file's row count: the layout cannot be trusted, so the caller reads everything."""
+    import bisect
+    import itertools
+    if sum(lengths.values()) != sum(group_rows):
+        return None
+    ends = list(itertools.accumulate(group_rows))          # row after each group's last row
+    out, start = {}, 0
+    for idx, n in lengths.items():
+        if n:
+            out[idx] = list(range(bisect.bisect_right(ends, start), bisect.bisect_left(ends, start + n) + 1))
+        else:
+            out[idx] = []
+        start += n
+    return out
 
 
 def _episode(insp: Inspection, idx: int, t, sk: str, ak: str) -> Episode:
@@ -164,11 +188,17 @@ def load_episode(insp: Inspection, idx: int, fs, base: str = "datasets", max_byt
         pf = pq.ParquetFile(fh)
         sk, ak, cols = _project(insp, pf)
         # the cap is on what is actually fetched (the columns read), not on the whole data file
-        size = _projected_bytes(pf, cols)
+        md = pf.metadata
+        rows = [md.row_group(g).num_rows for g in range(md.num_row_groups)]
+        rel = data_file(insp, idx)
+        mapping = row_groups_by_episode(_file_episodes(insp, only=rel)[rel], rows)
+        groups = list(range(md.num_row_groups)) if mapping is None else mapping[idx]      # layout not trusted: every group
+        size = _projected_bytes(pf, cols, groups)
         if size > max_bytes:
             raise TooLarge(f"Episode {idx}: its columns sit in {size / 1e6:.0f} MB of a shared data file; the limit is {max_bytes / 1e6:.0f} MB.")
         # rows stay in stored order: sorting by frame_index would hide exactly the faults TIME-002 looks for
-        t = pq.read_table(fh, columns=cols, filters=[("episode_index", "=", idx)]).to_pandas()
+        t = pf.read_row_groups(groups, columns=cols).to_pandas()
+        t = t[t["episode_index"] == idx]
     return _episode(insp, idx, t, sk, ak)
 
 
@@ -185,6 +215,7 @@ class Scan:
     total: int                                        # episodes in the dataset
     episodes: list = field(default_factory=list)      # EpisodeResult per checked episode
     unreadable: dict = field(default_factory=dict)    # episode index -> why it could not be checked
+    deliberate: tuple = ()                            # codes that fail in every episode checked: a convention, not a fault
 
     @property
     def scanned(self):
@@ -216,38 +247,97 @@ class Scan:
         return out
 
 
-MAX_SCAN_EPISODES = 200     # one file per episode on v2.x: stay well under the Hub's anonymous 500 requests per 5 minutes
+SCAN_WORKERS = 8
+MAX_SCAN_EPISODES = 200     # default sample; the page's "Scan all" button lifts it
 
 
-def scan_dataset(insp: Inspection, fs, base: str = "datasets", max_episodes: int = MAX_SCAN_EPISODES,
+def _file_episodes(insp: Inspection, only: str | None = None) -> dict:
+    """data file (relative path) -> {episode index: frames} in stored order, for every episode of the dataset
+    (or just the file `only`)."""
+    out = {}
+    if insp.version == "v3.0":
+        m = insp.meta.sort_index()
+        if only is not None:      # skip the other files' rows: the dataset can list tens of thousands of episodes
+            wanted = {tuple(int(x) for x in re.findall(r"\d+", only))}
+            keep = [(int(c), int(f)) in wanted for c, f in zip(m["data/chunk_index"], m["data/file_index"])]
+            m = m[keep]
+        for idx, chunk, file in zip(m["episode_index"], m["data/chunk_index"], m["data/file_index"]):
+            rel = insp.info["data_path"].format(chunk_index=int(chunk), file_index=int(file))
+            out.setdefault(rel, {})[int(idx)] = insp.episodes[int(idx)]
+    else:
+        for idx in sorted(insp.episodes):
+            out[data_file(insp, idx)] = {idx: insp.episodes[idx]}
+    return out
+
+
+def _scan_file(insp: Inspection, fs, base: str, rel: str, in_file: dict, idxs: list, max_bytes: int):
+    """Universal verdict for episodes `idxs` of one data file -> (EpisodeResults, {episode index: why unreadable}).
+
+    Reads only the row groups those episodes sit in, in batches of at most `max_bytes`; an episode that does not fit
+    on its own is unreadable, the rest are still checked."""
+    import pyarrow.parquet as pq
+    from .checks import universal_verdict
+    results, unreadable = [], {}
+    with fs.open(f"{base}/{insp.repo}/{rel}", "rb") as fh:
+        pf = pq.ParquetFile(fh)
+        sk, ak, cols = _project(insp, pf)
+        md = pf.metadata
+        mapping = row_groups_by_episode(in_file, [md.row_group(g).num_rows for g in range(md.num_row_groups)])
+        everything = list(range(md.num_row_groups))
+        groups = {i: everything if mapping is None else mapping[i] for i in idxs}     # layout not trusted: every group
+        batches, current, held = [], [], set()
+        for i in idxs:
+            need = held | set(groups[i])
+            if current and _projected_bytes(pf, cols, need) > max_bytes:
+                batches.append(current); current, need = [], set(groups[i])
+            current.append(i); held = need
+        batches.append(current)
+        for batch in batches:
+            wanted = sorted({g for i in batch for g in groups[i]})
+            size = _projected_bytes(pf, cols, wanted)
+            if size > max_bytes:
+                why = f"its columns sit in {size / 1e6:.0f} MB of a data file; the limit is {max_bytes / 1e6:.0f} MB"
+                unreadable.update({i: why for i in batch})
+                continue
+            df = pf.read_row_groups(wanted, columns=cols).to_pandas()
+            for idx in batch:
+                verdict, findings = universal_verdict(_episode(insp, idx, df[df["episode_index"] == idx], sk, ak))
+                results.append(EpisodeResult(idx, insp.episodes[idx], verdict, findings))
+    return results, unreadable
+
+
+def scan_dataset(insp: Inspection, fs, base: str = "datasets", max_episodes: int | None = None,
                  max_bytes: int = MAX_BYTES) -> Scan:
     """Run the universal checks on every episode (an evenly spaced sample past `max_episodes`), reading each data file
     once and only its state/action columns."""
     import numpy as np
     import pyarrow.parquet as pq
     from .checks import universal_verdict
+    max_episodes = MAX_SCAN_EPISODES if max_episodes is None else max_episodes
     ids = sorted(insp.episodes)
     if len(ids) > max_episodes:
         ids = [ids[i] for i in np.unique(np.linspace(0, len(ids) - 1, max_episodes).round().astype(int))]
     by_file = {}
     for idx in ids:
         by_file.setdefault(data_file(insp, idx), []).append(idx)
+    in_files = _file_episodes(insp)
     scan = Scan(total=len(insp.episodes))
-    for rel, idxs in by_file.items():
+
+    def one(item):
+        rel, idxs = item
         try:
-            with fs.open(f"{base}/{insp.repo}/{rel}", "rb") as fh:
-                pf = pq.ParquetFile(fh)
-                sk, ak, cols = _project(insp, pf)
-                size = _projected_bytes(pf, cols)
-                if size > max_bytes:
-                    raise TooLarge(f"its columns sit in {size / 1e6:.0f} MB of a data file; the limit is {max_bytes / 1e6:.0f} MB")
-                df = pf.read(columns=cols).to_pandas()
+            return _scan_file(insp, fs, base, rel, in_files[rel], idxs, max_bytes)
         except Exception as ex:      # one bad file must not hide the verdict on the rest
-            scan.unreadable.update({i: str(ex) or type(ex).__name__ for i in idxs})
-            continue
-        for idx in idxs:
-            verdict, findings = universal_verdict(_episode(insp, idx, df[df["episode_index"] == idx], sk, ak))
-            scan.episodes.append(EpisodeResult(idx, insp.episodes[idx], verdict, findings))
+            return [], {i: str(ex) or type(ex).__name__ for i in idxs}
+
+    with ThreadPoolExecutor(max_workers=SCAN_WORKERS) as pool:      # network bound: fetch files side by side
+        for results, unreadable in pool.map(one, by_file.items()):
+            scan.episodes.extend(results)
+            scan.unreadable.update(unreadable)
+    scan.episodes.sort(key=lambda e: e.idx)
+    scan.deliberate = dataset_conventions([e.findings for e in scan.episodes])
+    for e in scan.episodes:
+        e.verdict, e.findings = relax(e.findings, scan.deliberate)
     return scan
 
 

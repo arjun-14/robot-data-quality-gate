@@ -97,3 +97,13 @@ def test_verdict_on_load_passes_a_clean_episode():
     from qgate.checks import universal_verdict
     verdict, findings = universal_verdict(still_then_moving(0))
     assert verdict == "pass" and all(f.status == "pass" for f in findings)
+
+
+def test_idle_findings_name_the_stretch_of_frames_to_trim():
+    assert status(still_then_moving(120))["EPIS-004"].span == (0, 120)
+    assert status(moving_then_still(150))["EPIS-005"].span == (150, 300)
+
+
+def test_a_clean_episode_has_no_stretch_to_trim():
+    f = status(still_then_moving(30))
+    assert f["EPIS-004"].span is None and f["EPIS-005"].span is None

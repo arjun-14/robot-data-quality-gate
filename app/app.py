@@ -17,7 +17,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 from plotly.subplots import make_subplots
 
 from bench.inject import FAULTS, SEVERITIES, inject
-from qgate.checks import CODES, GATE_CODES, first_move, run_checks, universal_verdict, velocity, UNIVERSAL_CODES
+from qgate.checks import CODES, GATE_CODES, first_move, relax, run_checks, universal_verdict, velocity, UNIVERSAL_CODES
 from qgate.dataset import Episode
 from qgate.live import PENDING, LiveGate
 
@@ -75,6 +75,30 @@ st.html(f"""<style>
 .qg-ckl [title] {{ cursor:help; }}
 .qg-miss {{ padding-left:18px; margin:0; font-size:13px; }} .qg-miss li {{ margin-bottom:6px; }}
 .qg-outcome {{ font-size:15px; margin:4px 0 2px; }}
+.qg-mxw {{ container-type:inline-size; margin:8px 0 6px; }}
+.qg-mx {{ --vis:min(75, var(--n)); --lab:170px; --cnt:84px; --g:3px; --rg:5px; --pad:3px; --mg:14px;
+          --cs:max(9px, calc((100cqw - var(--lab) - var(--cnt) - 2 * var(--mg) - 2 * var(--pad) - (var(--vis) - 1) * var(--g) - 1px) / var(--vis)));
+          --ch:min(var(--cs), 22px);   /* fewer episodes than fit: columns widen to fill the row, height stops at 22px */
+          display:flex; gap:var(--mg); font-size:12.5px; }}
+.qg-mx .labs, .qg-mx .cnts {{ display:flex; flex-direction:column; gap:var(--rg); padding:var(--pad) 0; flex:none; }}
+.qg-mx .labs {{ width:var(--lab); }} .qg-mx .cnts {{ width:var(--cnt); }}
+.qg-mx .labs span, .qg-mx .cnts span {{ height:var(--ch); display:flex; align-items:center; white-space:nowrap; }}
+.qg-mx .labs i {{ font-style:normal; line-height:1.35; min-width:0; overflow:hidden; text-overflow:ellipsis; }}   /* taller than the row, so descenders show */
+.qg-mx .cnts span {{ justify-content:flex-end; font-family:'IBM Plex Mono', monospace; font-size:11.5px; opacity:.7; font-variant-numeric:tabular-nums; }}
+.qg-mx .scroll {{ flex:1; min-width:0; overflow-x:auto; overflow-y:hidden; padding:var(--pad); scrollbar-width:thin; }}
+.qg-mx .rows {{ display:flex; flex-direction:column; gap:var(--rg); width:max-content; }}
+.qg-mx .cells, .qg-mx .axis {{ display:grid; grid-auto-flow:column; grid-auto-columns:var(--cs); gap:var(--g); }}
+.qg-mx .cells {{ height:var(--ch); }}
+.qg-mx .axis {{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; opacity:.55; padding-top:2px; }}
+.qg-mx .c, .qg-mx-key .c {{ display:block; border-radius:2px; background:{NEUTRAL}; box-shadow:inset 0 0 0 1px rgba(127,127,127,.12); }}
+.qg-mx .c {{ cursor:pointer; }}
+.qg-mx .c.fail, .qg-mx-key .c.fail {{ background:{CRIT}; }} .qg-mx .c.warn, .qg-mx-key .c.warn {{ background:{WARN}; }}
+.qg-mx .c:hover {{ outline:2px solid {ACCENT}; outline-offset:1px; }}
+@container (max-width: 640px) {{ .qg-mx {{ --vis:min(15, var(--n)); --lab:96px; --cnt:0px; --mg:4px; font-size:11.5px; }} .qg-mx .cnts {{ display:none; }} }}
+.qg-mx-key {{ display:flex; flex-wrap:wrap; gap:4px 16px; font-size:12px; opacity:.8; margin:2px 0 10px; }}
+.qg-mx-key span {{ display:inline-flex; align-items:center; gap:6px; }}
+.qg-mx-key .c {{ width:10px; height:10px; }}
+.st-key-ds_jump {{ display:none; }}
 </style>""")
 
 
@@ -172,6 +196,48 @@ def evidence(ep: Episode, findings, th):
 def pill(v):
     label, glyph = STATUS[v]
     return f'<span class="qg-pill {v}"><i>{glyph}</i>{label}</span>'
+
+
+TICK_EVERY = 25      # an episode number under every 25th column
+
+
+def overview(scan, fps):
+    """Every episode checked as one square per check, GitHub-style, 75 columns in view and the rest a sideways scroll away.
+    Past 2,000 episodes a column stands for a run of consecutive episodes, to keep the page light."""
+    from qgate.overview import columns
+    by_idx = {e.idx: e for e in scan.episodes}
+    cols = columns(by_idx, max_cols=2000)
+    rank = {"pass": 0, "warn": 1, "fail": 2}
+
+    def cell(run, status_of, what):
+        worst = max(run, key=lambda i: rank[status_of(i)])
+        st_ = status_of(worst)
+        if len(run) == 1:
+            e = by_idx[worst]
+            tip = f"Episode {worst} · {e.n / float(fps):.0f} s · {what(worst)}"
+            return f'<i class="c {st_}" data-ep="{worst}" title="{tip}"></i>'
+        hit = sum(status_of(i) != "pass" for i in run)
+        share = hit / len(run)
+        tip = f"Episodes {run[0]}-{run[-1]}: {hit} of {len(run)} flagged"
+        return f'<i class="c {st_}" data-ep="{worst}" title="{tip}" style="opacity:{0.35 + 0.65 * share:.2f}"></i>' if hit else \
+               f'<i class="c pass" data-ep="{worst}" title="{tip}"></i>'
+
+    labs, rows, cnts = [], [], []
+    for code in UNIVERSAL_CODES:
+        status = {e.idx: next((f.status for f in e.findings if f.code == code), "pass") for e in scan.episodes}
+        detail = {e.idx: next((f.detail for f in e.findings if f.code == code), "") for e in scan.episodes}
+        if code in scan.deliberate:      # fires in every episode: how the dataset was recorded, not a fault, so shown as a pass
+            status = {i: "pass" for i in status}
+        count = f"{sum(v != 'pass' for v in status.values()):,}"
+        labs.append(f'<span title="{CODES[code]}"><i>{CODES[code]}</i></span>')
+        rows.append('<div class="cells">' + "".join(cell(run, status.get, detail.get) for run in cols) + "</div>")
+        cnts.append(f"<span>{count}</span>")
+    ticks = "".join(f'<span style="grid-column:{k + 1} / span {min(TICK_EVERY, len(cols) - k)}">{cols[k][0]}</span>' for k in range(0, len(cols), TICK_EVERY))
+    rows.append(f'<div class="axis">{ticks}</div>')
+    key = ('<div class="qg-mx-key"><span><i class="c fail"></i>quarantined</span><span><i class="c warn"></i>review</span>'
+           '<span><i class="c pass"></i>pass</span></div>')
+    return (f'<div class="qg-mxw"><div class="qg-mx" style="--n:{len(cols)}"><div class="labs">{"".join(labs)}</div>'
+            f'<div class="scroll"><div class="rows">{"".join(rows)}</div></div><div class="cnts">{"".join(cnts)}</div></div></div>{key}')
 
 
 def head(title, sub=""):
@@ -690,7 +756,6 @@ elif PAGE == "Any dataset":
     if st.session_state.get("ds_seen") != repo:      # new dataset: only a ?ep= in the URL opens an episode straight away
         st.session_state["ds_seen"] = repo
         st.session_state["ds_open"] = st.session_state.pop("ds_want", None)
-        H["tbl"] = H.get("tbl", 0) + 1
     cams = insp.cameras
     sn, an = insp.state_names, insp.action_names
     st.html('<div class="qg-sum">' + "".join(f"<span>{k} <b>{v}</b></span>" for k, v in (
@@ -699,21 +764,28 @@ elif PAGE == "Any dataset":
         ("cameras", len(cams)))) + "</div>")
 
     @st.cache_data(ttl=600, max_entries=8, show_spinner=False)
-    def hub_scan(repo):
-        return scan_dataset(hub_inspect(repo), hub_fs())
+    def hub_scan(repo, full=False):
+        insp_ = hub_inspect(repo)
+        return scan_dataset(insp_, hub_fs(), max_episodes=len(insp_.episodes) if full else None)
 
     try:
         with st.spinner(f"Checking {len(eps):,} episodes of {repo}…"):
-            scan = hub_scan(repo)
+            scan = hub_scan(repo, st.session_state.get("ds_full") == repo)
     except Exception as ex_:
         st.error(hub_error(ex_, f"scan {repo}")); st.stop()
 
     def _open(idx):
         st.session_state["ds_open"] = idx
+        st.session_state["ds_scroll"] = True            # pan down to the episode once it renders
+        H["ep"] = None                                  # reload it, so it starts playing from the top
+
+    def _jump():
+        ep = st.session_state["ds_jump"].split(":")[0]
+        if ep.isdigit():
+            _open(int(ep))
 
     def _back():
         st.session_state["ds_open"] = None
-        H["tbl"] += 1                                   # fresh table, so the old row selection does not reopen the episode
 
     # ---- the dataset verdict: what a user gets on entering a dataset
     flagged = {}                                         # code -> worst status over episodes, and which episodes
@@ -723,6 +795,12 @@ elif PAGE == "Any dataset":
                 flagged[f.code] = "fail" if "fail" in (f.status, flagged.get(f.code)) else "warn"
     with st.container(border=True):
         st.html(f'<div class="qg-h"><b>{repo}</b></div>')
+        if scan.unreadable:      # before the numbers: they only describe the episodes that could be read
+            why = next(iter(scan.unreadable.values()))
+            tried = scan.scanned + len(scan.unreadable)
+            note = (f" The verdict below rests on {scan.scanned:,} of the {tried:,} episodes sampled, so treat it as unreliable."
+                    if len(scan.unreadable) > scan.scanned else "")
+            st.warning(f"{len(scan.unreadable):,} episodes could not be checked ({why}).{note}")
         cc = st.columns(4)
         with cc[0]: stat("Episodes", f"{scan.total:,}", f"{scan.scanned:,} checked")
         with cc[1]: stat("Passed", f"{scan.passed:,}", f"{scan.passed / max(scan.scanned, 1):.0%} of checked")
@@ -731,29 +809,32 @@ elif PAGE == "Any dataset":
         rows = []
         for code in UNIVERSAL_CODES:
             n_ep = len(scan.by_code.get(code, []))
+            what = ("every episode checked · looks deliberate, not a fault" if code in scan.deliberate
+                    else f"{n_ep} episode{'s' if n_ep != 1 else ''}")
             rows.append(f'<span class="s {flagged.get(code, "pass")}"></span><span>{CODES[code]}</span>'
-                        f'<span class="d">{code} · {n_ep} episode{"s" if n_ep != 1 else ""}</span>')
+                        f'<span class="d">{what}</span>')
         st.html(f'<div class="qg-ckl">{"".join(rows)}</div>')
-        if scan.unreadable:
-            why = next(iter(scan.unreadable.values()))
-            st.warning(f"{len(scan.unreadable):,} episodes could not be checked ({why}).")
+        if scan.scanned + len(scan.unreadable) < scan.total:      # an evenly spaced sample, not every episode
+            st.html(f'<div class="qg-note">Checked an evenly spaced sample of {scan.scanned + len(scan.unreadable):,} of {scan.total:,} episodes.</div>')
+            st.button(f"Scan all {scan.total:,} episodes", key="ds_scan_all", on_click=st.session_state.__setitem__, args=("ds_full", repo),
+                      help="Reads every episode's state and action columns. On a large dataset this can take minutes and download a lot of data.")
 
     with st.container(border=True):
-        head("Episodes", "worst first · select a row to see what failed beside the video")
-        show = st.segmented_control("Show", ["All", "Failed", "Warned"], default="All", key="ds_show", label_visibility="collapsed") or "All"
-        order = {"fail": 0, "warn": 1, "pass": 2}
-        table = pd.DataFrame([dict(Episode=e.idx, Frames=e.n, Verdict=STATUS[e.verdict][0],
-                                   Flags=", ".join(CODES[f.code] for f in e.findings if f.status != "pass") or "–", _o=order[e.verdict])
-                              for e in scan.episodes]).sort_values(["_o", "Episode"]).drop(columns="_o")
-        if show != "All":
-            table = table[table["Verdict"] == STATUS["fail" if show == "Failed" else "warn"][0]]
-        sel = st.dataframe(table, hide_index=True, width="stretch", on_select="rerun", selection_mode="single-row",
-                           key=f"ds_tbl_{H['tbl']}", height=min(35 * len(table) + 38, 330))
-        if sel.selection.rows:
-            _pick = int(table.iloc[sel.selection.rows[0]]["Episode"])
-            if _pick != st.session_state.get("ds_open"):
-                st.session_state["ds_open"] = _pick
-                st.rerun()
+        head("Episodes")
+        if scan.episodes:
+            st.html(overview(scan, insp.fps))
+        # a click on a cell writes "<episode>:<nonce>" into a hidden input, which opens that episode below
+        st.text_input("Open episode", key="ds_jump", label_visibility="collapsed", on_change=_jump)
+        st.html("""<script>(() => {
+          if (window.__qgmx) return; window.__qgmx = true;
+          document.addEventListener("click", ev => {
+            const c = ev.target.closest(".qg-mx .c[data-ep]"); if (!c) return;
+            const inp = document.querySelector(".st-key-ds_jump input"); if (!inp) return;
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(inp, c.dataset.ep + ":" + Date.now());
+            inp.dispatchEvent(new Event("input", {bubbles: true}));
+            inp.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true}));
+          });
+        })();</script>""", unsafe_allow_javascript=True)
 
     ep_idx = st.session_state.get("ds_open")
     if ep_idx is not None and ep_idx not in insp.episodes:
@@ -763,9 +844,10 @@ elif PAGE == "Any dataset":
         st.query_params.pop("ep", None)
         st.stop()
     st.query_params["repo"], st.query_params["ep"] = repo, str(ep_idx)
+    st.html('<div id="ds-ep"></div>')
     st.button("← Back to the dataset verdict", on_click=_back)
 
-    if (H["repo"], H["ep"]) != (repo, ep_idx):
+    if (H["repo"], H["ep"], H.get("dl")) != (repo, ep_idx, scan.deliberate):
         try:
             with st.spinner(f"Streaming episode {ep_idx} from the Hub…"):
                 src = hub_episode(repo, ep_idx)
@@ -774,7 +856,12 @@ elif PAGE == "Any dataset":
         except Exception as ex_:
             st.error(hub_error(ex_, f"read episode {ep_idx}")); st.stop()
         verdict, findings = universal_verdict(src)     # decided on load: no waiting for the episode to play out
-        H.update(repo=repo, ep=ep_idx, src=src, verdict=verdict, findings={f.code: f for f in findings}, base=0.0, anchor=None)
+        verdict, findings = relax(findings, scan.deliberate)      # same reading of a dataset-wide convention as the verdict above
+        H.update(repo=repo, ep=ep_idx, dl=scan.deliberate, src=src, verdict=verdict, findings={f.code: f for f in findings},
+                 base=0.0, anchor=time.time())     # plays straight away
+    if st.session_state.pop("ds_scroll", False):
+        st.html(f"""<script>setTimeout(() => document.getElementById("ds-ep")?.scrollIntoView({{behavior: "smooth", block: "start"}}), 150)
+                </script><!-- {time.time()} -->""", unsafe_allow_javascript=True)
     src, findings = H["src"], H["findings"]
     dur = src.n / src.fps
 
@@ -847,7 +934,7 @@ elif PAGE == "Any dataset":
         for code, f in findings.items():
             why = WHY.get(code, "")
             rows.append(f'<span class="s {f.status}"></span><span title="{f.detail}">{CODES[code]}</span>'
-                        f'<span class="d">{code} · {f.detail}</span>')
+                        f'<span class="d">{f.detail}</span>')
         st.html(f'<div class="qg-ckl">{"".join(rows)}</div>')
         for code, f in findings.items():
             if f.status != "pass" and code in WHY:
@@ -861,7 +948,7 @@ elif PAGE == "Any dataset":
         else:
             st.html('<div class="qg-note">Nothing flagged: no stretch to jump to.</div>')
 
-    def hub_fig(t_cur):
+    def hub_fig():
         """State channels (solid) with the commanded action (dashed) when state and action share names."""
         k = len(chans)
         fig = make_subplots(rows=k, cols=1, shared_xaxes=True, vertical_spacing=0.012)
@@ -883,26 +970,46 @@ elif PAGE == "Any dataset":
             for code, status, s0, e0 in ranges:
                 fig.add_vrect(x0=s0 / src.fps, x1=max(e0, s0 + 1) / src.fps, fillcolor=FLAG_FILL[status], line_width=0,
                               layer="below", row=r + 1, col=1)
-        fig.add_vline(x=min(t_cur, dur), line=dict(color=ACCENT, width=1))
         base_layout(fig, 58 * k + 30, hovermode="x unified", hoversubplots="axis", margin=dict(l=0, r=8, t=4, b=0))
         fig.update_xaxes(range=[0, dur], showgrid=True, gridcolor=NEUTRAL, zeroline=False)
         fig.update_xaxes(ticksuffix=" s", row=k, col=1)
         return fig
 
-    @st.fragment(run_every=TICK if playing else None)
-    def hub_signals():
+    # The chart is drawn once per episode/channel change; the cursor is a line the browser slides over it on the same clock
+    # as the video. Redrawing the figure every tick to move the cursor made the whole chart blink.
+    with st.container(border=True):
+        head("Signals", ("state solid · commanded action dotted" if pairable else
+                         "state only: state and action channels differ, so the commanded action is not overlaid")
+             + f' · shading = frames the checks flagged · cursor at <b id="ds-cur">{min(clock(H), dur):.1f}</b> s')
+        st.plotly_chart(hub_fig(), key="ds_sig", config={"displayModeBar": False}, width="stretch")
+    st.html(f"""<script>(() => {{
+      if (window.__qgcur) clearInterval(window.__qgcur);
+      const base = {clock(H):.4f}, speed = {H["speed"]}, playing = {str(playing).lower()}, dur = {dur:.4f}, t0 = performance.now();
+      window.__qgcur = setInterval(() => {{
+        const t = Math.min(playing ? base + (performance.now() - t0) / 1000 * speed : base, dur);
+        const lab = document.getElementById("ds-cur"); if (lab) lab.textContent = t.toFixed(1);
+        const gd = document.querySelector(".st-key-ds_sig .js-plotly-plot"), fl = gd && gd._fullLayout;
+        if (!fl || !fl.xaxis || !fl.xaxis.l2p) return;
+        let line = gd.querySelector(".qg-cursor");
+        if (!line) {{
+          line = document.createElement("div"); line.className = "qg-cursor";
+          line.style.cssText = "position:absolute;width:1px;background:{ACCENT};pointer-events:none;z-index:2";
+          gd.style.position = "relative"; gd.appendChild(line);
+        }}
+        line.style.left = (fl.xaxis._offset + fl.xaxis.l2p(t)) + "px";
+        line.style.top = fl._size.t + "px"; line.style.height = fl._size.h + "px";
+      }}, 50);
+    }})();</script><!-- {time.time()} -->""", unsafe_allow_javascript=True)
+
+    @st.fragment(run_every=1.0 if playing else None)
+    def hub_end():
+        """Draws nothing: once the episode has played out, stop the clock so the button reads Play again."""
         H = st.session_state["hub"]
-        t_cur = clock(H)
-        if H["anchor"] is not None and t_cur >= H["src"].n / H["src"].fps:     # played out: stop ticking
+        if H["anchor"] is not None and clock(H) >= H["src"].n / H["src"].fps:
             H["base"], H["anchor"] = H["src"].n / H["src"].fps, None
             st.rerun(scope="app")
-        with st.container(border=True):
-            head("Signals", ("state solid · commanded action dotted" if pairable else
-                             "state only: state and action channels differ, so the commanded action is not overlaid")
-                 + f" · shading = frames the checks flagged · cursor at {min(t_cur, dur):.1f} s")
-            st.plotly_chart(hub_fig(t_cur), key="ds_sig", config={"displayModeBar": False}, width="stretch")
 
-    hub_signals()
+    hub_end()
 
 else:
     table, sevs = BENCH["table"], ["subtle", "moderate", "obvious"]

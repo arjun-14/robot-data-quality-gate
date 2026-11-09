@@ -34,6 +34,7 @@ class Finding:
     status: str
     detail: str
     frames: list = field(default_factory=list)
+    span: tuple | None = None      # (first frame, end frame) of the stretch flagged, when it is one stretch (idle start/end)
 
     @property
     def name(self):
@@ -173,8 +174,10 @@ def idle_start(ep, th):
     k = first_move(ep)
     if k is None:
         return Finding("EPIS-004", PASS, "nothing moves (see no signal)")
-    return _f("EPIS-004", k / ep.fps > IDLE_MAX_S, f"still for the first {k / ep.fps:.1f} s; trim the first {k} frames",
-              f"moves after {k / ep.fps:.1f} s", frames=range(k), warn=True)
+    f = _f("EPIS-004", k / ep.fps > IDLE_MAX_S, f"still for the first {k / ep.fps:.1f} s; trim the first {k} frames",
+           f"moves after {k / ep.fps:.1f} s", frames=range(k), warn=True)
+    f.span = (0, k) if f.status != PASS else None
+    return f
 
 
 def idle_end(ep, th):
@@ -182,8 +185,10 @@ def idle_end(ep, th):
     k = first_move(ep, from_end=True)
     if k is None:
         return Finding("EPIS-005", PASS, "nothing moves (see no signal)")
-    return _f("EPIS-005", k / ep.fps > IDLE_MAX_S, f"still for the last {k / ep.fps:.1f} s; trim the last {k} frames",
-              f"still for {k / ep.fps:.1f} s at the end", frames=range(ep.n - k, ep.n), warn=True)
+    f = _f("EPIS-005", k / ep.fps > IDLE_MAX_S, f"still for the last {k / ep.fps:.1f} s; trim the last {k} frames",
+           f"still for {k / ep.fps:.1f} s at the end", frames=range(ep.n - k, ep.n), warn=True)
+    f.span = (ep.n - k, ep.n) if f.status != PASS else None
+    return f
 
 
 def state_copy(ep, th, atol=1e-6):
@@ -214,6 +219,26 @@ GATE_CODES = tuple(c for c in CODES if c not in UNIVERSAL_CODES or c == "JOINT-0
 def universal_verdict(ep):
     """(verdict, findings) from the universal checks alone: what the Any dataset page shows the moment an episode loads."""
     return run_checks(ep, STRUCTURAL_TH, UNIVERSAL)
+
+
+# Findings that say nothing about one episode when every episode shows them: state equal to action across a whole dataset is how
+# it was recorded (a sim exporter, a labelling convention), while in a few episodes of many it is a fault.
+CONVENTION_CODES = ("XSIG-002",)
+
+
+def dataset_conventions(findings_per_episode):
+    """Codes in CONVENTION_CODES that failed in every episode checked (two or more: one episode cannot show a convention)."""
+    if len(findings_per_episode) < 2:
+        return ()
+    return tuple(c for c in CONVENTION_CODES
+                 if all(any(f.code == c and f.status == FAIL for f in fs) for fs in findings_per_episode))
+
+
+def relax(findings, codes):
+    """(verdict, findings) with the failures of `codes` turned into passes that say why, for a dataset that does this throughout."""
+    out = [Finding(f.code, PASS, f"{f.detail}; same in every episode checked, so it looks deliberate", f.frames, f.span)
+           if f.code in codes and f.status == FAIL else f for f in findings]
+    return max(out, key=lambda f: RANK[f.status]).status, out
 
 
 def run_checks(ep, th, checks=None):

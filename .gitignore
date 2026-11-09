@@ -5,3 +5,4 @@ tickets/
 __pycache__/
 *.egg-info/
 .pytest_cache/
+.streamlit/secrets.toml

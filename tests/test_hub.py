@@ -89,11 +89,12 @@ def frames(ep, n, fps=30, offset=0, kind="move"):
         st[:] = st[0]
     elif kind == "idle":
         st[:120] = st[0]
+    action = st if kind == "copy" else st + 1          # "copy": the exporter wrote the command into the state column
     return dict(episode_index=[ep] * n, frame_index=t.tolist(), timestamp=(t / fps).astype("float32").tolist(),
-                index=(t + offset).tolist(), **{"observation.state": st.tolist(), "action": (st + 1).tolist()})
+                index=(t + offset).tolist(), **{"observation.state": st.tolist(), "action": action.tolist()})
 
 
-def write_v3(base, repo, lengths=(20, 30), cam="observation.images.top", drop=(), rename=None, kinds=None):
+def write_v3(base, repo, lengths=(20, 30), cam="observation.images.top", drop=(), rename=None, kinds=None, groups=False):
     kinds = kinds or {}
     rename = rename or {}
     """Two episodes packed into one data file, as LeRobot v3.0 stores them."""
@@ -111,7 +112,15 @@ def write_v3(base, repo, lengths=(20, 30), cam="observation.images.top", drop=()
         off += n
     import os
     os.makedirs(f"{root}/data/chunk-000", exist_ok=True); os.makedirs(f"{root}/meta/episodes/chunk-000", exist_ok=True)
-    pd.concat(rows or [pd.DataFrame(frames(0, 0))]).drop(columns=list(drop)).rename(columns=rename).to_parquet(f"{root}/data/chunk-000/file-000.parquet", index=False)
+    data_path = f"{root}/data/chunk-000/file-000.parquet"
+    if groups:    # one row group per episode, as FineART is written
+        import pyarrow as pa, pyarrow.parquet as pq
+        tables = [pa.Table.from_pandas(r.drop(columns=list(drop)).rename(columns=rename), preserve_index=False) for r in rows]
+        with pq.ParquetWriter(data_path, tables[0].schema) as w:
+            for t in tables:
+                w.write_table(t, row_group_size=len(t) or 1)
+    else:
+        pd.concat(rows or [pd.DataFrame(frames(0, 0))]).drop(columns=list(drop)).rename(columns=rename).to_parquet(data_path, index=False)
     pd.DataFrame(eps).to_parquet(f"{root}/meta/episodes/chunk-000/file-000.parquet", index=False)
     return repo
 
@@ -298,3 +307,171 @@ def test_scan_skips_data_files_over_the_size_cap_and_says_why(hub):
     scan = scan_dataset(inspect_dataset(repo, fs, base), fs, base, max_bytes=100)
     assert scan.scanned == 0 and sorted(scan.unreadable) == [0, 1]
     assert "MB" in scan.unreadable[0]
+
+
+# ---- which row groups of a shared data file hold which episodes
+
+def test_each_episode_maps_to_the_row_groups_that_overlap_its_rows():
+    from qgate.hub import row_groups_by_episode
+    # row groups line up with episodes (as in FineART): one group each
+    assert row_groups_by_episode({0: 3, 1: 2, 2: 4}, [3, 2, 4]) == {0: [0], 1: [1], 2: [2]}
+    # row groups do not line up: episode 1 (rows 3-4) straddles groups 0 (rows 0-3) and 1 (rows 4-8)
+    assert row_groups_by_episode({0: 3, 1: 2, 2: 4}, [4, 5]) == {0: [0], 1: [0, 1], 2: [1]}
+
+
+def test_episode_lengths_that_disagree_with_the_file_map_to_nothing():
+    from qgate.hub import row_groups_by_episode
+    assert row_groups_by_episode({0: 3, 1: 2}, [3, 3]) is None
+
+
+# ---- scanning a dataset whose episodes share large data files
+
+def test_scan_checks_episodes_whose_row_groups_fit_the_cap_though_the_file_does_not(hub):
+    import os
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v3(base, "lab/big-file", lengths=(300,) * 6, groups=True)
+    insp = inspect_dataset(repo, fs, base)
+    cap = os.path.getsize(f"{base}/{repo}/data/chunk-000/file-000.parquet") // 3     # under the file, over any one episode
+    scan = scan_dataset(insp, fs, base, max_episodes=2, max_bytes=cap)
+    assert scan.unreadable == {}
+    assert sorted(e.idx for e in scan.episodes) == [0, 5]
+
+
+def test_scan_of_every_episode_in_a_file_over_the_cap_is_read_in_batches(hub):
+    import os
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v3(base, "lab/big-file", lengths=(300,) * 6, groups=True)
+    insp = inspect_dataset(repo, fs, base)
+    cap = os.path.getsize(f"{base}/{repo}/data/chunk-000/file-000.parquet") // 3
+    scan = scan_dataset(insp, fs, base, max_bytes=cap)
+    assert scan.unreadable == {} and sorted(e.idx for e in scan.episodes) == list(range(6))
+
+
+def test_an_episode_too_big_for_the_cap_does_not_hide_the_others(hub):
+    import os
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v3(base, "lab/lopsided", lengths=(100, 100, 3000), groups=True)
+    insp = inspect_dataset(repo, fs, base)
+    cap = os.path.getsize(f"{base}/{repo}/data/chunk-000/file-000.parquet") // 4
+    scan = scan_dataset(insp, fs, base, max_bytes=cap)
+    assert sorted(e.idx for e in scan.episodes) == [0, 1]
+    assert list(scan.unreadable) == [2] and "MB" in scan.unreadable[2]
+
+
+def test_scan_verdicts_do_not_depend_on_how_the_file_is_split_into_row_groups(hub):
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    kinds = {0: "move", 1: "static", 2: "idle", 3: "move"}
+    out = {}
+    for name, groups in (("one-group", False), ("per-episode", True)):
+        repo = write_v3(base, f"lab/{name}", lengths=(200, 250, 300, 220), kinds=kinds, groups=groups)
+        scan = scan_dataset(inspect_dataset(repo, fs, base), fs, base, max_episodes=3)
+        assert scan.unreadable == {}
+        out[name] = {e.idx: (e.verdict, [(f.code, f.status) for f in e.findings]) for e in scan.episodes}
+    assert len(out["one-group"]) == 3 and out["one-group"] == out["per-episode"]
+    assert len({v for v, _ in out["per-episode"].values()}) > 1       # the sample really contains good and bad episodes
+
+
+def test_scan_falls_back_to_reading_everything_when_episode_lengths_disagree_with_the_file(hub):
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v3(base, "lab/liar", lengths=(200, 250, 300), groups=True)
+    insp = inspect_dataset(repo, fs, base)
+    insp.episodes[0] = 999                                              # metadata no longer matches the data file
+    scan = scan_dataset(insp, fs, base)
+    assert scan.unreadable == {} and sorted(e.idx for e in scan.episodes) == [0, 1, 2]
+
+
+def test_scan_reads_data_files_concurrently(tmp_path):
+    import threading
+    from qgate.hub import scan_dataset
+
+    class MeetingPoint(LocalFileSystem):
+        """Each data file waits for another to be opened at the same time: a sequential scan times out."""
+        gate = threading.Barrier(2, timeout=3)
+
+        def open(self, path, *a, **k):
+            if "/episode_" in str(path):
+                self.gate.wait()
+            return super().open(path, *a, **k)
+
+    fs, base = MeetingPoint(), str(tmp_path)
+    repo = write_v2(base, "lab/many-files", lengths=(50, 60))
+    scan = scan_dataset(inspect_dataset(repo, LocalFileSystem(), base), fs, base)
+    assert scan.unreadable == {} and sorted(e.idx for e in scan.episodes) == [0, 1]
+
+
+def test_a_corrupt_data_file_leaves_the_other_episodes_checked(hub):
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v2(base, "lab/one-bad", lengths=(50, 60, 70))
+    open(f"{base}/{repo}/data/chunk-000/episode_000001.parquet", "wb").write(b"not parquet")
+    scan = scan_dataset(inspect_dataset(repo, fs, base), fs, base)
+    assert sorted(e.idx for e in scan.episodes) == [0, 2] and list(scan.unreadable) == [1]
+
+
+def test_episode_is_loaded_from_its_own_row_group_when_the_whole_file_is_over_the_cap(hub):
+    import os
+    import numpy as np
+    fs, base = hub
+    repo = write_v3(base, "lab/big-file", lengths=(300, 300, 300, 300), groups=True)
+    insp = inspect_dataset(repo, fs, base)
+    cap = os.path.getsize(f"{base}/{repo}/data/chunk-000/file-000.parquet") // 2
+    ep = load_episode(insp, 2, fs, base, max_bytes=cap)
+    assert ep.n == 300
+    np.testing.assert_allclose(ep.state, np.array(frames(2, 300)["observation.state"]), rtol=1e-6)
+
+
+def test_episode_whose_own_row_groups_exceed_the_cap_is_still_refused(hub):
+    fs, base = hub
+    repo = write_v3(base, "lab/big-file", lengths=(300, 300), groups=True)
+    with pytest.raises(TooLarge, match="MB"):
+        load_episode(inspect_dataset(repo, fs, base), 0, fs, base, max_bytes=100)
+
+
+def test_scan_samples_up_to_the_default_limit_unless_asked_for_more(hub, monkeypatch):
+    import qgate.hub
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v2(base, "lab/eight", lengths=(30,) * 8)
+    insp = inspect_dataset(repo, fs, base)
+    monkeypatch.setattr(qgate.hub, "MAX_SCAN_EPISODES", 3)
+    assert scan_dataset(insp, fs, base).scanned == 3
+    assert scan_dataset(insp, fs, base, max_episodes=8).scanned == 8
+
+
+def test_the_default_scan_limit_is_two_hundred_episodes():
+    import qgate.hub
+    assert qgate.hub.MAX_SCAN_EPISODES == 200
+
+
+# ---- state equal to action: a fault in one episode, a recording convention when every episode does it
+
+def scan_of(hub, name, kinds, lengths=(200, 250, 300)):
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v3(base, f"lab/{name}", lengths=lengths, kinds=kinds)
+    return scan_dataset(inspect_dataset(repo, fs, base), fs, base)
+
+
+def test_state_equal_to_action_in_every_episode_is_a_convention_not_a_failure(hub):
+    scan = scan_of(hub, "all-copy", {0: "copy", 1: "copy", 2: "copy"})
+    assert scan.failed == 0 and scan.verdict == "pass" and scan.scanned == 3
+    assert scan.by_code.get("XSIG-002") is None
+    assert scan.deliberate == ("XSIG-002",)
+    detail = next(f.detail for f in scan.episodes[0].findings if f.code == "XSIG-002")
+    assert "every episode" in detail and "deliberate" in detail
+
+
+def test_state_equal_to_action_in_only_some_episodes_still_fails_those(hub):
+    scan = scan_of(hub, "some-copy", {0: "copy"})
+    assert scan.deliberate == ()
+    assert scan.by_code["XSIG-002"] == [0] and scan.failed == 1 and scan.passed == 2
+
+
+def test_one_episode_alone_cannot_show_that_state_equal_to_action_is_deliberate(hub):
+    scan = scan_of(hub, "one-copy", {0: "copy"}, lengths=(200,))
+    assert scan.deliberate == () and scan.failed == 1
