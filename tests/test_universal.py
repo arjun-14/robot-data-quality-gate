@@ -83,3 +83,17 @@ def test_small_twitch_on_a_barely_used_joint_does_not_end_the_idle_start():
 
 def test_two_second_settle_at_start_is_fine():
     assert status(still_then_moving(60))["EPIS-004"].status == "pass"
+
+
+def test_verdict_on_load_reports_worst_finding_and_all_five_checks():
+    from qgate.checks import UNIVERSAL_CODES, universal_verdict
+    verdict, findings = universal_verdict(still_then_moving(120))
+    assert verdict == "warn"
+    assert tuple(f.code for f in findings) == UNIVERSAL_CODES
+    assert {f.code: f.status for f in findings}["EPIS-004"] == "warn"
+
+
+def test_verdict_on_load_passes_a_clean_episode():
+    from qgate.checks import universal_verdict
+    verdict, findings = universal_verdict(still_then_moving(0))
+    assert verdict == "pass" and all(f.status == "pass" for f in findings)

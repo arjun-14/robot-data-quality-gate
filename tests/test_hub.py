@@ -58,7 +58,7 @@ def test_old_lerobot_version_is_rejected(hub):
     assert not r.ok and r.step == "unsupported version" and "v1.6" in r.message
 
 
-@pytest.mark.parametrize("missing", ["observation.state", "action", "frame_index", "timestamp"])
+@pytest.mark.parametrize("missing", ["observation.state", "action"])
 def test_lerobot_dataset_without_required_columns_is_rejected(hub, missing):
     fs, base = hub
     feats = {k: v for k, v in FEATURES.items() if k != missing}
@@ -80,31 +80,38 @@ def test_gated_repo_is_rejected_as_gated(hub):
     assert not r.ok and r.step == "gated or private"
 
 
-def frames(ep, n, fps=30, offset=0):
+def frames(ep, n, fps=30, offset=0, kind="move"):
+    """kind: "move" (clean), "static" (nothing moves) or "idle" (robot holds still for the first 4 s)."""
     import numpy as np
     t = np.arange(n)
     st = np.stack([np.sin(t / 10 + ep), np.cos(t / 10), (t > n / 2) * 30.0], axis=1).astype("float32")
+    if kind == "static":
+        st[:] = st[0]
+    elif kind == "idle":
+        st[:120] = st[0]
     return dict(episode_index=[ep] * n, frame_index=t.tolist(), timestamp=(t / fps).astype("float32").tolist(),
                 index=(t + offset).tolist(), **{"observation.state": st.tolist(), "action": (st + 1).tolist()})
 
 
-def write_v3(base, repo, lengths=(20, 30), cam="observation.images.top"):
+def write_v3(base, repo, lengths=(20, 30), cam="observation.images.top", drop=(), rename=None, kinds=None):
+    kinds = kinds or {}
+    rename = rename or {}
     """Two episodes packed into one data file, as LeRobot v3.0 stores them."""
     import pandas as pd
     info = v3_info(total_episodes=len(lengths), total_frames=sum(lengths),
-                   features={**FEATURES, cam: {"dtype": "video", "shape": [480, 640, 3], "info": {"video.codec": "av1"}}})
+                   features={**{rename.get(k, k): v for k, v in FEATURES.items() if k not in drop}, cam: {"dtype": "video", "shape": [480, 640, 3], "info": {"video.codec": "av1"}}})
     make_repo(base, repo, info=info)
     root = f"{base}/{repo}"
     rows, eps, off = [], [], 0
     for i, n in enumerate(lengths):
-        rows.append(pd.DataFrame(frames(i, n, offset=off)))
+        rows.append(pd.DataFrame(frames(i, n, offset=off, kind=kinds.get(i, "move"))))
         eps.append({"episode_index": i, "length": n, "data/chunk_index": 0, "data/file_index": 0,
                     f"videos/{cam}/chunk_index": 0, f"videos/{cam}/file_index": 0,
                     f"videos/{cam}/from_timestamp": off / 30, f"videos/{cam}/to_timestamp": (off + n) / 30})
         off += n
     import os
     os.makedirs(f"{root}/data/chunk-000", exist_ok=True); os.makedirs(f"{root}/meta/episodes/chunk-000", exist_ok=True)
-    pd.concat(rows).to_parquet(f"{root}/data/chunk-000/file-000.parquet", index=False)
+    pd.concat(rows or [pd.DataFrame(frames(0, 0))]).drop(columns=list(drop)).rename(columns=rename).to_parquet(f"{root}/data/chunk-000/file-000.parquet", index=False)
     pd.DataFrame(eps).to_parquet(f"{root}/meta/episodes/chunk-000/file-000.parquet", index=False)
     return repo
 
@@ -197,3 +204,97 @@ def test_unknown_repo_is_rejected_as_not_found(hub):
     fs, base = hub
     r = inspect_dataset("nobody/nothing", fs, base)
     assert not r.ok and r.step == "not found"
+
+
+def test_dataset_with_no_episodes_is_rejected_not_crashed(hub):
+    fs, base = hub
+    repo = write_v2(base, "lab/empty-v2", lengths=())
+    r = inspect_dataset(repo, fs, base)
+    assert not r.ok and r.step == "no episodes"
+    repo = write_v3(base, "lab/empty-v3", lengths=())
+    r = inspect_dataset(repo, fs, base)
+    assert not r.ok and r.step == "no episodes"
+
+
+def test_dataset_without_frame_index_or_timestamp_is_still_checkable(hub):
+    import numpy as np
+    fs, base = hub
+    repo = write_v3(base, "lab/bare", lengths=(20, 30), drop=("frame_index", "timestamp"))
+    insp = inspect_dataset(repo, fs, base)
+    assert insp.ok
+    ep = load_episode(insp, 1, fs, base)
+    assert ep.n == 30
+    assert ep.frame_index.tolist() == list(range(30))
+    np.testing.assert_allclose(ep.ts, np.arange(30) / 30)
+
+
+def test_non_standard_state_and_action_names_are_understood(hub):
+    import numpy as np
+    fs, base = hub
+    repo = write_v3(base, "lab/aliased", lengths=(20, 30), rename={"observation.state": "state", "action": "actions"})
+    insp = inspect_dataset(repo, fs, base)
+    assert insp.ok
+    assert insp.state_names == ["a", "b", "gripper"] and insp.action_names == ["a", "b", "gripper"]
+    ep = load_episode(insp, 1, fs, base)
+    np.testing.assert_allclose(ep.state, np.array(frames(1, 30)["observation.state"]), rtol=1e-6)
+    np.testing.assert_allclose(ep.action, np.array(frames(1, 30)["action"]), rtol=1e-6)
+
+
+def test_size_cap_counts_only_the_columns_read(hub):
+    import numpy as np, pandas as pd, os
+    fs, base = hub
+    repo = write_v3(base, "lab/wide", lengths=(20, 30))
+    path = f"{base}/{repo}/data/chunk-000/file-000.parquet"
+    df = pd.read_parquet(path)
+    rng = np.random.default_rng(0)
+    df["junk"] = [rng.random(2000).tolist() for _ in range(len(df))]    # incompressible bulk the gate never reads
+    df.to_parquet(path, index=False)
+    insp = inspect_dataset(repo, fs, base)
+    assert os.path.getsize(path) > 500_000
+    assert load_episode(insp, 0, fs, base, max_bytes=50_000).n == 20
+    with pytest.raises(TooLarge):
+        load_episode(insp, 0, fs, base, max_bytes=100)
+
+
+def test_scan_counts_passed_warned_and_failed_episodes(hub):
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v3(base, "lab/mixed", lengths=(300, 300, 300, 300), kinds={1: "static", 2: "idle"})
+    scan = scan_dataset(inspect_dataset(repo, fs, base), fs, base)
+    assert scan.total == 4 and scan.scanned == 4
+    assert (scan.passed, scan.warned, scan.failed) == (2, 1, 1)
+    assert scan.verdict == "fail"
+    assert scan.by_code["JOINT-005"] == [1] and scan.by_code["EPIS-004"] == [2]
+    assert {e.idx: e.verdict for e in scan.episodes} == {0: "pass", 1: "fail", 2: "warn", 3: "pass"}
+
+
+def test_scan_of_a_large_dataset_samples_evenly_and_says_so(hub):
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v2(base, "lab/many", lengths=(300,) * 10)
+    scan = scan_dataset(inspect_dataset(repo, fs, base), fs, base, max_episodes=4)
+    assert scan.total == 10 and scan.scanned == 4
+    assert [e.idx for e in scan.episodes] == [0, 3, 6, 9]
+    assert scan.sampled
+    assert not scan_dataset(inspect_dataset(repo, fs, base), fs, base).sampled
+
+
+def test_scan_reports_unreadable_episodes_instead_of_dropping_them(hub):
+    import os
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v2(base, "lab/broken", lengths=(300, 300, 300))
+    os.remove(f"{base}/{repo}/data/chunk-000/episode_000001.parquet")
+    scan = scan_dataset(inspect_dataset(repo, fs, base), fs, base)
+    assert [e.idx for e in scan.episodes] == [0, 2]
+    assert list(scan.unreadable) == [1] and scan.unreadable[1]
+    assert scan.total == 3
+
+
+def test_scan_skips_data_files_over_the_size_cap_and_says_why(hub):
+    from qgate.hub import scan_dataset
+    fs, base = hub
+    repo = write_v3(base, "lab/huge", lengths=(300, 300))
+    scan = scan_dataset(inspect_dataset(repo, fs, base), fs, base, max_bytes=100)
+    assert scan.scanned == 0 and sorted(scan.unreadable) == [0, 1]
+    assert "MB" in scan.unreadable[0]

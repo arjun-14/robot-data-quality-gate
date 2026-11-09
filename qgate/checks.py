@@ -211,6 +211,11 @@ UNIVERSAL_CODES = ("JOINT-005", "EPIS-003", "EPIS-004", "EPIS-005", "XSIG-002")
 GATE_CODES = tuple(c for c in CODES if c not in UNIVERSAL_CODES or c == "JOINT-005")   # codes ALL_CHECKS reports
 
 
+def universal_verdict(ep):
+    """(verdict, findings) from the universal checks alone: what the Any dataset page shows the moment an episode loads."""
+    return run_checks(ep, STRUCTURAL_TH, UNIVERSAL)
+
+
 def run_checks(ep, th, checks=None):
     findings = [c(ep, th) for c in (checks or ALL_CHECKS)]
     worst = max(findings, key=lambda f: RANK[f.status]).status

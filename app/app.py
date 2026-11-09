@@ -17,7 +17,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 from plotly.subplots import make_subplots
 
 from bench.inject import FAULTS, SEVERITIES, inject
-from qgate.checks import CODES, GATE_CODES, first_move, run_checks, velocity
+from qgate.checks import CODES, GATE_CODES, first_move, run_checks, universal_verdict, velocity, UNIVERSAL_CODES
 from qgate.dataset import Episode
 from qgate.live import PENDING, LiveGate
 
@@ -617,40 +617,61 @@ elif PAGE == "Any dataset":
     # Stream any public LeRobot dataset from the Hub: its frames are read into memory (nothing saved), replayed on the
     # playback clock, and checked by the universal checks (no thresholds; each caught real faults on the Hub, ticket T8).
     from huggingface_hub import HfFileSystem
-    from qgate.hub import TooLarge, inspect_dataset, load_episode, video_source
+    from qgate.hub import TooLarge, inspect_dataset, load_episode, scan_dataset, video_source
 
     # one per check, each from a different dataset (only that check fires, except too short: every sub-1 s episode
     # in the Hub sample is also static)
-    EXAMPLES = [("samsitol/so100_peg01", 19, "no signal"),
-                ("apayan/so100_ball8", 28, "too short"),
-                ("maux/so100_test", 4, "idle start"),
-                ("acrampette/third_arm_01", 7, "idle end"),
-                ("cedricxie/robofac-lerobot-preview", 14, "state copied"),
-                ("lerobot/svla_so100_pickplace", 36, "clean")]
+    EXAMPLES = ["lerobot/svla_so100_pickplace", "samsitol/so100_peg01", "cedricxie/robofac-lerobot-preview", "maux/so100_test"]
+
+    # why each flag matters for training a policy (primary sources: tickets/T8-research-state-action-checks.md)
+    WHY = {"JOINT-005": "A static episode teaches the policy to do nothing; no-op labels make policies freeze (OpenVLA, arXiv 2406.09246, App. C / E.1).",
+           "EPIS-004": "Leading idle frames are training samples that map the start pose to \"stay still\" (Diffusion Policy, arXiv 2303.04137, §4.3, §6.1; OpenVLA App. C). Trim them.",
+           "EPIS-005": "Trailing idle frames add no-op samples after the task is done (same sources as idle start). Trim them.",
+           "EPIS-003": "Under one second is too short to hold a full demonstration; it is probably a mis-trigger of the recorder.",
+           "XSIG-002": "Action should be the leader arm's command, recorded apart from the follower state (ACT, arXiv 2304.13705, §IV). Identical or shifted copies can mean the label was derived from state, though some datasets do this on purpose."}
+
+    def hub_error(ex_, what):
+        """One message for a failed Hub call; a 429 says to wait (and how long) instead of dumping the exception."""
+        resp = getattr(ex_, "response", None)
+        if getattr(resp, "status_code", None) == 429 or "429" in str(ex_)[:200]:
+            wait = (resp.headers.get("Retry-After") if resp is not None else None) or ""
+            return ("The Hugging Face Hub is rate-limiting this connection (anonymous limit: 500 requests per 5 minutes). "
+                    f"Try again{f' in about {wait} s' if wait.isdigit() else ' in a minute or two'}; "
+                    "setting HF_TOKEN before launching the app raises the limit.")
+        return f"Could not {what} on the Hub: {type(ex_).__name__}: {ex_}"
+
+    def hub_fs():
+        """HF_TOKEN (env, or Streamlit secrets on a hosted app) lifts the anonymous 500-requests-per-5-minutes limit."""
+        import os
+        try:
+            token = os.environ.get("HF_TOKEN") or st.secrets.get("HF_TOKEN")
+        except Exception:      # no secrets file
+            token = None
+        return HfFileSystem(token=token or None)
 
     @st.cache_data(ttl=600, show_spinner=False)
     def hub_inspect(repo):
-        return inspect_dataset(repo, HfFileSystem())
+        return inspect_dataset(repo, hub_fs())
 
     @st.cache_data(ttl=600, max_entries=16, show_spinner=False)
     def hub_episode(repo, idx):
-        return load_episode(hub_inspect(repo), idx, HfFileSystem())
+        return load_episode(hub_inspect(repo), idx, hub_fs())
 
     if "ds_repo" not in st.session_state:
-        st.session_state["ds_repo"] = st.query_params.get("repo", EXAMPLES[0][0])
+        st.session_state["ds_repo"] = st.query_params.get("repo", "")      # nothing loads until a dataset is entered
         _qe = st.query_params.get("ep", "")
-        st.session_state["ds_want"] = int(_qe) if _qe.isdigit() else (EXAMPLES[0][1] if st.session_state["ds_repo"] == EXAMPLES[0][0] else None)
-    H = st.session_state.setdefault("hub", dict(repo=None, ep=None, speed=1.0, base=0.0, anchor=None, cursor=0, log=[]))
+        st.session_state["ds_want"] = int(_qe) if _qe.isdigit() else None
+    H = st.session_state.setdefault("hub", dict(repo=None, ep=None, speed=1.0, base=0.0, anchor=None))
 
-    def _example(repo, ep):
-        st.session_state["ds_repo"], st.session_state["ds_want"] = repo, ep
+    def _example(repo):
+        st.session_state["ds_repo"], st.session_state["ds_open"] = repo, None   # examples show the dataset verdict
 
     with st.container(border=True):
         st.text_input("LeRobot dataset on the Hugging Face Hub", key="ds_repo", placeholder="owner/name, e.g. lerobot/svla_so100_pickplace")
         ex = st.columns(len(EXAMPLES) + 1, vertical_alignment="center")
         ex[0].html('<div class="qg-note" style="margin:0">Examples:</div>')
-        for col, (repo, ep, label) in zip(ex[1:], EXAMPLES):
-            col.button(f"{label} · ep {ep}", key=f"ex_{repo}_{ep}", on_click=_example, args=(repo, ep), help=repo, width="stretch")
+        for col, name in zip(ex[1:], EXAMPLES):
+            col.button(name, key=f"ex_{name}", on_click=_example, args=(name,), width="stretch")
 
     repo = st.session_state["ds_repo"].strip().strip("/").removeprefix("https://huggingface.co/datasets/")
     if not repo:
@@ -659,18 +680,17 @@ elif PAGE == "Any dataset":
         with st.spinner(f"Checking {repo} on the Hub…"):
             insp = hub_inspect(repo)
     except Exception as ex_:
-        st.error(f"Could not reach {repo} on the Hub: {type(ex_).__name__}: {ex_}")
+        st.error(hub_error(ex_, f"reach {repo}"))
         st.stop()
     if not insp.ok:
         st.warning(f"**{insp.step[0].upper() + insp.step[1:]}.** {insp.message}")
         st.stop()
 
     eps = sorted(insp.episodes)
-    if H["repo"] != repo:   # new dataset: pick the requested episode (from an example or the URL) or the first one
-        want = st.session_state.pop("ds_want", None)
-        st.session_state["ds_ep"] = want if want in insp.episodes else eps[0]
-    elif "ds_want" in st.session_state and st.session_state["ds_want"] in insp.episodes:
-        st.session_state["ds_ep"] = st.session_state.pop("ds_want")
+    if st.session_state.get("ds_seen") != repo:      # new dataset: only a ?ep= in the URL opens an episode straight away
+        st.session_state["ds_seen"] = repo
+        st.session_state["ds_open"] = st.session_state.pop("ds_want", None)
+        H["tbl"] = H.get("tbl", 0) + 1
     cams = insp.cameras
     sn, an = insp.state_names, insp.action_names
     st.html('<div class="qg-sum">' + "".join(f"<span>{k} <b>{v}</b></span>" for k, v in (
@@ -678,15 +698,72 @@ elif PAGE == "Any dataset":
         ("frames", f"{insp.info.get('total_frames', sum(insp.episodes.values())):,}"), ("state", len(sn)), ("action", len(an)),
         ("cameras", len(cams)))) + "</div>")
 
-    c = st.columns([1.4, .9, .7, .7, 2.2], vertical_alignment="bottom")
-    if len(eps) <= 5000:
-        c[0].selectbox("Episode", eps, key="ds_ep", format_func=lambda i: f"Episode {i} · {insp.episodes[i]} frames")
-    else:
-        c[0].number_input("Episode", min_value=eps[0], max_value=eps[-1], step=1, key="ds_ep")
-    ep_idx = int(st.session_state["ds_ep"])
-    if ep_idx not in insp.episodes:
-        st.warning(f"Episode {ep_idx} is not in this dataset."); st.stop()
+    @st.cache_data(ttl=600, max_entries=8, show_spinner=False)
+    def hub_scan(repo):
+        return scan_dataset(hub_inspect(repo), hub_fs())
+
+    try:
+        with st.spinner(f"Checking {len(eps):,} episodes of {repo}…"):
+            scan = hub_scan(repo)
+    except Exception as ex_:
+        st.error(hub_error(ex_, f"scan {repo}")); st.stop()
+
+    def _open(idx):
+        st.session_state["ds_open"] = idx
+
+    def _back():
+        st.session_state["ds_open"] = None
+        H["tbl"] += 1                                   # fresh table, so the old row selection does not reopen the episode
+
+    # ---- the dataset verdict: what a user gets on entering a dataset
+    flagged = {}                                         # code -> worst status over episodes, and which episodes
+    for e in scan.episodes:
+        for f in e.findings:
+            if f.status != "pass":
+                flagged[f.code] = "fail" if "fail" in (f.status, flagged.get(f.code)) else "warn"
+    with st.container(border=True):
+        st.html(f'<div class="qg-h"><b>{repo}</b></div>')
+        cc = st.columns(4)
+        with cc[0]: stat("Episodes", f"{scan.total:,}", f"{scan.scanned:,} checked")
+        with cc[1]: stat("Passed", f"{scan.passed:,}", f"{scan.passed / max(scan.scanned, 1):.0%} of checked")
+        with cc[2]: stat("Warned", f"{scan.warned:,}", "trim or review")
+        with cc[3]: stat("Failed", f"{scan.failed:,}", "keep out of training", alert=scan.failed > 0)
+        rows = []
+        for code in UNIVERSAL_CODES:
+            n_ep = len(scan.by_code.get(code, []))
+            rows.append(f'<span class="s {flagged.get(code, "pass")}"></span><span>{CODES[code]}</span>'
+                        f'<span class="d">{code} · {n_ep} episode{"s" if n_ep != 1 else ""}</span>')
+        st.html(f'<div class="qg-ckl">{"".join(rows)}</div>')
+        if scan.unreadable:
+            why = next(iter(scan.unreadable.values()))
+            st.warning(f"{len(scan.unreadable):,} episodes could not be checked ({why}).")
+
+    with st.container(border=True):
+        head("Episodes", "worst first · select a row to see what failed beside the video")
+        show = st.segmented_control("Show", ["All", "Failed", "Warned"], default="All", key="ds_show", label_visibility="collapsed") or "All"
+        order = {"fail": 0, "warn": 1, "pass": 2}
+        table = pd.DataFrame([dict(Episode=e.idx, Frames=e.n, Verdict=STATUS[e.verdict][0],
+                                   Flags=", ".join(CODES[f.code] for f in e.findings if f.status != "pass") or "–", _o=order[e.verdict])
+                              for e in scan.episodes]).sort_values(["_o", "Episode"]).drop(columns="_o")
+        if show != "All":
+            table = table[table["Verdict"] == STATUS["fail" if show == "Failed" else "warn"][0]]
+        sel = st.dataframe(table, hide_index=True, width="stretch", on_select="rerun", selection_mode="single-row",
+                           key=f"ds_tbl_{H['tbl']}", height=min(35 * len(table) + 38, 330))
+        if sel.selection.rows:
+            _pick = int(table.iloc[sel.selection.rows[0]]["Episode"])
+            if _pick != st.session_state.get("ds_open"):
+                st.session_state["ds_open"] = _pick
+                st.rerun()
+
+    ep_idx = st.session_state.get("ds_open")
+    if ep_idx is not None and ep_idx not in insp.episodes:
+        st.warning(f"Episode {ep_idx} is not in this dataset."); ep_idx = None
+    if ep_idx is None:
+        st.query_params["repo"] = repo
+        st.query_params.pop("ep", None)
+        st.stop()
     st.query_params["repo"], st.query_params["ep"] = repo, str(ep_idx)
+    st.button("← Back to the dataset verdict", on_click=_back)
 
     if (H["repo"], H["ep"]) != (repo, ep_idx):
         try:
@@ -695,22 +772,39 @@ elif PAGE == "Any dataset":
         except TooLarge as ex_:
             st.warning(str(ex_)); st.stop()
         except Exception as ex_:
-            st.error(f"Could not read episode {ep_idx}: {type(ex_).__name__}: {ex_}"); st.stop()
-        H.update(repo=repo, ep=ep_idx, src=src, gate=LiveGate(None, src.fps, idx=ep_idx), cursor=0, base=0.0, anchor=None, log=[])
-    src, gate = H["src"], H["gate"]
+            st.error(hub_error(ex_, f"read episode {ep_idx}")); st.stop()
+        verdict, findings = universal_verdict(src)     # decided on load: no waiting for the episode to play out
+        H.update(repo=repo, ep=ep_idx, src=src, verdict=verdict, findings={f.code: f for f in findings}, base=0.0, anchor=None)
+    src, findings = H["src"], H["findings"]
     dur = src.n / src.fps
 
+    # stretches of the episode the checks flagged (shaded on the plot, and jump targets for the video)
+    ranges, whole = [], None
+    for code, f in findings.items():
+        if f.status == "pass":
+            continue
+        if code == "EPIS-004":
+            ranges.append((code, f.status, 0, first_move(src) or 0))
+        elif code == "EPIS-005":
+            ranges.append((code, f.status, src.n - (first_move(src, from_end=True) or 0), src.n))
+        elif f.status == "fail":
+            whole = code
+    if whole:
+        ranges.insert(0, (whole, "fail", 0, src.n))
+
     def _hplay():
-        if H["gate"].final is not None:
-            H.update(gate=LiveGate(None, H["src"].fps, idx=H["ep"]), cursor=0, base=0.0, anchor=time.time(), log=[])
-        elif H["anchor"] is None:
+        if H["anchor"] is None:
+            if clock(H) >= dur - 0.05:
+                H["base"] = 0.0
             H["anchor"] = time.time()
         else:
             H["base"], H["anchor"] = clock(H), None
 
     def _hrestart():
-        H.update(gate=LiveGate(None, H["src"].fps, idx=H["ep"]), cursor=0, base=0.0, log=[],
-                 anchor=time.time() if H["anchor"] is not None else None)
+        H.update(base=0.0, anchor=time.time() if H["anchor"] is not None else None)
+
+    def _hjump(frame):
+        H.update(base=frame / H["src"].fps, anchor=None)
 
     def _hspeed():
         if st.session_state["ds_speed"] is None:
@@ -720,13 +814,15 @@ elif PAGE == "Any dataset":
         H["speed"] = float(st.session_state["ds_speed"].rstrip("×"))
 
     playing = H["anchor"] is not None
-    c[1].segmented_control("Speed", ["1×", "2×", "4×"], key="ds_speed", default=f"{H['speed']:g}×", on_change=_hspeed)
-    c[2].button("Pause" if playing else "Play", on_click=_hplay, type="primary", width="stretch")
-    c[3].button("Restart", on_click=_hrestart, width="stretch")
+    c = st.columns([.9, .7, .7, 3], vertical_alignment="bottom")
+    c[0].segmented_control("Speed", ["1×", "2×", "4×"], key="ds_speed", default=f"{H['speed']:g}×", on_change=_hspeed)
+    c[1].button("Pause" if playing else "Play", on_click=_hplay, type="primary", width="stretch")
+    c[2].button("Restart", on_click=_hrestart, width="stretch")
     pairable = sn == an
     default_ch = list(range(min(8, len(sn))))
-    chans = c[4].multiselect("Channels to plot", list(range(len(sn))), default=default_ch, key=f"ds_ch_{repo}",
-                             format_func=lambda j: sn[j], max_selections=12) or default_ch
+    with c[3].expander("Channels to plot"):
+        chans = st.multiselect("Channels to plot", list(range(len(sn))), default=default_ch, key=f"ds_ch_{repo}",
+                               format_func=lambda j: sn[j], max_selections=12, label_visibility="collapsed") or default_ch
 
     v_col, p_col = st.columns([1.25, 2])
     with v_col, st.container(border=True):
@@ -740,22 +836,43 @@ elif PAGE == "Any dataset":
             h, w = (shape[1], shape[2]) if len(shape) == 3 and shape[0] in (1, 3) else (shape[0], shape[1])
             codec = (insp.info["features"][cam].get("info") or {}).get("video.codec", "unknown codec")
             synced_video(url, vstart, dur, clock(H), H["speed"], playing, aspect=f"{w}/{h}")
-            st.html(f'<div class="qg-note">{cam.split(".")[-1]} camera · {codec} · streamed from the Hub, follows the gate\'s clock.</div>')
+            st.html(f'<div class="qg-note">{cam.split(".")[-1]} camera · {codec} · streamed from the Hub, follows the playback clock.</div>')
         else:
             st.html('<div class="qg-note">This dataset has no video.</div>')
 
-    def hub_fig(part, flags_iv, end_flag):
+    with p_col, st.container(border=True):
+        st.html(f'<div class="qg-h"><b>Episode {ep_idx}</b>{pill(H["verdict"])}'
+                f'<span>{src.n} frames · {dur:.1f} s · decided on load</span></div>')
+        rows = []
+        for code, f in findings.items():
+            why = WHY.get(code, "")
+            rows.append(f'<span class="s {f.status}"></span><span title="{f.detail}">{CODES[code]}</span>'
+                        f'<span class="d">{code} · {f.detail}</span>')
+        st.html(f'<div class="qg-ckl">{"".join(rows)}</div>')
+        for code, f in findings.items():
+            if f.status != "pass" and code in WHY:
+                st.html(f'<div class="qg-note"><b>{CODES[code]}.</b> {WHY[code]}</div>')
+        if ranges:
+            st.html('<div class="qg-note" style="margin:8px 0 2px">Flagged stretches · click to jump the video and cursor there</div>')
+            rc = st.columns(min(len(ranges), 3))
+            for col, (code, status, a, b) in zip(rc, ranges):
+                col.button(f"{CODES[code]} · {a / src.fps:.1f}–{b / src.fps:.1f} s", key=f"ds_rng_{code}", on_click=_hjump,
+                           args=(a,), width="stretch")
+        else:
+            st.html('<div class="qg-note">Nothing flagged: no stretch to jump to.</div>')
+
+    def hub_fig(t_cur):
         """State channels (solid) with the commanded action (dashed) when state and action share names."""
         k = len(chans)
         fig = make_subplots(rows=k, cols=1, shared_xaxes=True, vertical_spacing=0.012)
-        t = np.arange(part.n) / src.fps
+        t = np.arange(src.n) / src.fps
         for r, j in enumerate(chans):
             full = np.concatenate([src.state[:, j], src.action[:, j]] if pairable else [src.state[:, j]])
             full = full[np.isfinite(full)]
             if pairable:
-                fig.add_trace(go.Scatter(x=t, y=part.action[:, j], line=dict(width=1, color=MUTED_LINE, dash="dot"),
+                fig.add_trace(go.Scatter(x=t, y=src.action[:, j], line=dict(width=1, color=MUTED_LINE, dash="dot"),
                                          name=f"{sn[j]} (action)", hovertemplate="%{y:.3g}"), row=r + 1, col=1)
-            fig.add_trace(go.Scatter(x=t, y=part.state[:, j], line=dict(width=1.5, color=ACCENT), name=sn[j],
+            fig.add_trace(go.Scatter(x=t, y=src.state[:, j], line=dict(width=1.5, color=ACCENT), name=sn[j],
                                      hovertemplate="%{y:.3g}"), row=r + 1, col=1)
             if len(full):
                 span = (full.max() - full.min()) or 1.0
@@ -763,77 +880,28 @@ elif PAGE == "Any dataset":
             fig.add_annotation(xref=f"x{r + 1 if r else ''} domain", yref=f"y{r + 1 if r else ''} domain", x=0, y=1, xanchor="left",
                                yanchor="top", text=f"<b>{sn[j]}</b>", showarrow=False, font=dict(size=11.5))
             fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, row=r + 1, col=1)
-            for status, s0, e0 in flags_iv:
+            for code, status, s0, e0 in ranges:
                 fig.add_vrect(x0=s0 / src.fps, x1=max(e0, s0 + 1) / src.fps, fillcolor=FLAG_FILL[status], line_width=0,
                               layer="below", row=r + 1, col=1)
-        if end_flag:
-            fig.add_vrect(x0=0, x1=dur, fillcolor=FLAG_FILL["fail"], line_width=0, layer="below")
-        fig.add_vline(x=max(part.n - 1, 0) / src.fps, line=dict(color=ACCENT, width=1))
+        fig.add_vline(x=min(t_cur, dur), line=dict(color=ACCENT, width=1))
         base_layout(fig, 58 * k + 30, hovermode="x unified", hoversubplots="axis", margin=dict(l=0, r=8, t=4, b=0))
         fig.update_xaxes(range=[0, dur], showgrid=True, gridcolor=NEUTRAL, zeroline=False)
         fig.update_xaxes(ticksuffix=" s", row=k, col=1)
         return fig
 
     @st.fragment(run_every=TICK if playing else None)
-    def hub_panel():
-        H = st.session_state["hub"]; gate, src = H["gate"], H["src"]
-        target = min(src.n, int(clock(H) * src.fps) + 1)
-        for k in range(H["cursor"], target):
-            H["log"] += gate.push(src.ts[k], src.frame_index[k], src.state[k], src.action[k])
-        H["cursor"] = target
-        if H["cursor"] == src.n and gate.final is None:
-            H["log"] += gate.finish()
-        if gate.final is not None and H["anchor"] is not None:   # stop ticking once the episode has played out
-            H["base"], H["anchor"] = src.n / src.fps, None
-            st.rerun(scope="app")
-        n = H["cursor"]
-        live = H["anchor"] is not None and gate.final is None
-        st.html(f'<div class="qg-h"><span class="qg-live {"" if live else "off"}"><i></i>{"LIVE" if live else "ended" if gate.final else "paused"}</span>'
-                f'<b>Episode {H["ep"]}</b>{pill(gate.verdict)}<span>{"final verdict" if gate.final else "verdict so far"}</span></div>')
-        first = min(gate.first.items(), key=lambda kv: kv[1][0], default=None)
-        cc = st.columns(2)
-        with cc[0]: stat("Frame", f"{n}", f"of {src.n} · {n / src.fps:.1f} / {src.n / src.fps:.1f} s")
-        with cc[1]:
-            if first:
-                code, (fr, s) = first
-                stat("First flag", f"{fr / src.fps:.1f} s", f"{code} · {'at episode end' if gate.final and fr >= src.n - 1 else 'mid-episode'}", alert=True)
-            else:
-                stat("First flag", "none", "no finding yet")
-        rows = []
-        for code, s in gate.status.items():
-            name = CODES[code]
-            when = f"{gate.first[code][0] / src.fps:.1f} s" if code in gate.first else (gate.detail[code] or "ok so far") if s == PENDING else "ok so far" if not gate.final else "pass"
-            rows.append(f'<span class="s {s}"></span><span title="{gate.detail[code]}">{name}</span><span class="d">{code} · {when}</span>')
-        st.html(f'<div class="qg-ckl">{"".join(rows)}</div><div class="qg-note">Checks that work on any LeRobot dataset, using only '
-                "state and action. All are decided when the episode ends (dashed until then).</div>")
-
-    @st.fragment(run_every=TICK if playing else None)
     def hub_signals():
-        H = st.session_state["hub"]; gate = H["gate"]
-        left, right = st.columns([3, 1])
-        with left, st.container(border=True):
-            head("Signals as they arrive", ("state solid · commanded action dotted" if pairable else
-                                            "state only: state and action channels differ, so the commanded action is not overlaid")
-                 + " · shading = frames the gate flagged")
-            if gate.n > 1:
-                part, iv = gate.episode(), []
-                if gate.status["EPIS-004"] in FLAG_FILL:              # shade the still stretch to trim
-                    iv.append((gate.status["EPIS-004"], 0, first_move(part)))
-                if gate.status["EPIS-005"] in FLAG_FILL:
-                    iv.append((gate.status["EPIS-005"], part.n - first_move(part, from_end=True), part.n))
-                whole = any(gate.status[c_] == "fail" for c_ in ("JOINT-005", "EPIS-003", "XSIG-002"))
-                st.plotly_chart(hub_fig(part, iv, whole), key="ds_sig",
-                                config={"displayModeBar": False}, width="stretch")
-        with right, st.container(border=True):
-            head("Event log", "newest first")
-            ev = H["log"][-14:][::-1]
-            st.html('<div class="qg-log">' + "".join(
-                f'<span class="t">{e["frame"] / H["src"].fps:.1f}s</span>{pill(e["status"])}<span class="qg-code">{e["code"]}</span>'
-                f'<span>{"at end · " if e.get("at_end") else ""}{e["detail"]}</span>' for e in ev) + "</div>"
-                if ev else '<div class="qg-note">No findings yet.</div>')
+        H = st.session_state["hub"]
+        t_cur = clock(H)
+        if H["anchor"] is not None and t_cur >= H["src"].n / H["src"].fps:     # played out: stop ticking
+            H["base"], H["anchor"] = H["src"].n / H["src"].fps, None
+            st.rerun(scope="app")
+        with st.container(border=True):
+            head("Signals", ("state solid · commanded action dotted" if pairable else
+                             "state only: state and action channels differ, so the commanded action is not overlaid")
+                 + f" · shading = frames the checks flagged · cursor at {min(t_cur, dur):.1f} s")
+            st.plotly_chart(hub_fig(t_cur), key="ds_sig", config={"displayModeBar": False}, width="stretch")
 
-    with p_col, st.container(border=True):
-        hub_panel()
     hub_signals()
 
 else:
