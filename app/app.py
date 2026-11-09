@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
 
-from qgate.checks import CODES, first_move, relax, universal_verdict, UNIVERSAL_CODES
+from qgate.checks import CODES, relax, universal_verdict, UNIVERSAL_CODES
 
 st.set_page_config(page_title="qgate", layout="wide")
 
@@ -419,10 +419,8 @@ ranges, whole = [], None
 for code, f in findings.items():
     if f.status == "pass":
         continue
-    if code == "EPIS-004":
-        ranges.append((code, f.status, 0, first_move(src) or 0))
-    elif code == "EPIS-005":
-        ranges.append((code, f.status, src.n - (first_move(src, from_end=True) or 0), src.n))
+    if code in ("EPIS-004", "EPIS-005") and f.span:
+        ranges.append((code, f.status, *f.span))
     elif f.status == "fail":
         whole = code
 if whole:

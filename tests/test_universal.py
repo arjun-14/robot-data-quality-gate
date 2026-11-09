@@ -107,3 +107,37 @@ def test_idle_findings_name_the_stretch_of_frames_to_trim():
 def test_a_clean_episode_has_no_stretch_to_trim():
     f = status(still_then_moving(30))
     assert f["EPIS-004"].span is None and f["EPIS-005"].span is None
+
+
+def static(n=300, fps=30.0, state=0.0, action=0.0):
+    """Nothing moves: constant state and action, e.g. placeholder zeros."""
+    k = np.arange(n)
+    return Episode(0, fps, np.full((n, 3), state), np.full((n, 3), action), k / fps, k)
+
+
+def test_a_static_episode_runs_every_check_and_is_still_at_both_ends():
+    f = status(static())
+    assert f["JOINT-005"].status == "fail"
+    for code in ("EPIS-004", "EPIS-005"):
+        assert f[code].status == "warn" and f[code].span == (0, 300) and "whole episode" in f[code].detail
+
+
+def test_a_short_static_episode_is_not_flagged_idle():
+    f = status(static(n=60))                         # 2 s: under the 3 s idle limit
+    assert f["EPIS-004"].status == f["EPIS-005"].status == "pass"
+    assert "still throughout" in f["EPIS-004"].detail
+
+
+def test_placeholder_zeros_in_state_and_action_count_as_state_copied_from_action():
+    assert status(static())["XSIG-002"].status == "fail"
+
+
+def test_constant_but_different_state_and_action_pass_state_copy():
+    assert status(static(state=0.0, action=1.0))["XSIG-002"].status == "pass"
+
+
+def test_frozen_state_with_a_moving_action_is_compared_not_skipped():
+    ep = make_episode(0)
+    ep.state[:] = ep.state[0]
+    f = status(ep)["XSIG-002"]
+    assert f.status == "pass" and "nothing moves" not in f.detail

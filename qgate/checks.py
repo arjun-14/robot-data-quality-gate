@@ -172,10 +172,11 @@ def first_move(ep, from_end=False):
 def idle_start(ep, th):
     """Robot still for more than 3 s before the demonstration starts: teaches the policy to wait at the start pose."""
     k = first_move(ep)
-    if k is None:
-        return Finding("EPIS-004", PASS, "nothing moves (see no signal)")
-    f = _f("EPIS-004", k / ep.fps > IDLE_MAX_S, f"still for the first {k / ep.fps:.1f} s; trim the first {k} frames",
-           f"moves after {k / ep.fps:.1f} s", frames=range(k), warn=True)
+    if k is None:      # nothing ever moves: still for the whole episode
+        k = ep.n
+    f = _f("EPIS-004", k / ep.fps > IDLE_MAX_S, (f"still for the whole episode ({k / ep.fps:.1f} s); nothing moves" if k == ep.n else
+           f"still for the first {k / ep.fps:.1f} s; trim the first {k} frames"),
+           f"still throughout, but only {k / ep.fps:.1f} s" if k == ep.n else f"moves after {k / ep.fps:.1f} s", frames=range(k), warn=True)
     f.span = (0, k) if f.status != PASS else None
     return f
 
@@ -183,10 +184,12 @@ def idle_start(ep, th):
 def idle_end(ep, th):
     """Robot parked for more than 3 s after the demonstration ends (often the recording timer running out)."""
     k = first_move(ep, from_end=True)
-    if k is None:
-        return Finding("EPIS-005", PASS, "nothing moves (see no signal)")
-    f = _f("EPIS-005", k / ep.fps > IDLE_MAX_S, f"still for the last {k / ep.fps:.1f} s; trim the last {k} frames",
-           f"still for {k / ep.fps:.1f} s at the end", frames=range(ep.n - k, ep.n), warn=True)
+    if k is None:      # nothing ever moves: still for the whole episode
+        k = ep.n
+    f = _f("EPIS-005", k / ep.fps > IDLE_MAX_S, (f"still for the whole episode ({k / ep.fps:.1f} s); nothing moves" if k == ep.n else
+           f"still for the last {k / ep.fps:.1f} s; trim the last {k} frames"),
+           f"still throughout, but only {k / ep.fps:.1f} s" if k == ep.n else f"still for {k / ep.fps:.1f} s at the end",
+           frames=range(ep.n - k, ep.n), warn=True)
     f.span = (ep.n - k, ep.n) if f.status != PASS else None
     return f
 
@@ -196,8 +199,6 @@ def state_copy(ep, th, atol=1e-6):
     S, A = np.nan_to_num(ep.state), np.nan_to_num(ep.action)
     if S.shape != A.shape or ep.n < 2:
         return Finding("XSIG-002", PASS, "state and action differ in width; not comparable")
-    if (np.ptp(S, axis=0) == 0).all() or (np.ptp(A, axis=0) == 0).all():
-        return Finding("XSIG-002", PASS, "nothing moves (see no signal)")
     how = ("state is identical to action" if np.allclose(S, A, atol=atol) else
            "action is the next frame's state" if np.allclose(A[:-1], S[1:], atol=atol) else
            "action is the previous frame's state" if np.allclose(A[1:], S[:-1], atol=atol) else None)

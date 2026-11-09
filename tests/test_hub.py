@@ -273,7 +273,7 @@ def test_scan_counts_passed_warned_and_failed_episodes(hub):
     assert scan.total == 4 and scan.scanned == 4
     assert (scan.passed, scan.warned, scan.failed) == (2, 1, 1)
     assert scan.verdict == "fail"
-    assert scan.by_code["JOINT-005"] == [1] and scan.by_code["EPIS-004"] == [2]
+    assert scan.by_code["JOINT-005"] == [1] and scan.by_code["EPIS-004"] == [1, 2]   # 1 never moves, so it is still at the start too
     assert {e.idx: e.verdict for e in scan.episodes} == {0: "pass", 1: "fail", 2: "warn", 3: "pass"}
 
 
