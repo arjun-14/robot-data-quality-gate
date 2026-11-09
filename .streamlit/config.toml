@@ -1,9 +1,6 @@
 [client]
 toolbarMode = "minimal"
 
-[server]
-enableStaticServing = true   # Live page serves per-episode clips from app/static/clips (scripts/build_clips.py)
-
 [theme]
 base = "light"
 font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"

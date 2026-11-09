@@ -30,7 +30,7 @@ def verdict_page(tmp_path, monkeypatch, corrupt=(), kinds=None, open_episode=Non
         (tmp_path / f"datasets/lab/x/data/chunk-000/episode_{i:06d}.parquet").write_bytes(b"not parquet")
     monkeypatch.setattr(huggingface_hub, "HfFileSystem", lambda token=None: LocalFileSystem())     # the Hub is a local dir
     at = AppTest.from_file(APP, default_timeout=60)
-    at.session_state["nav"], at.session_state["ds_repo"] = "Any dataset", "lab/x"
+    at.session_state["ds_repo"] = "lab/x"
     if open_episode is not None:
         at.session_state["ds_want"] = open_episode      # what a ?ep= in the URL leaves for the page to open
     at.run()
@@ -127,13 +127,24 @@ def test_the_overview_has_a_row_per_check_marking_where_it_fired(tmp_path, monke
 
 def test_clicking_a_cell_opens_that_episode_and_plays_it(tmp_path, monkeypatch):
     at = verdict_page(tmp_path, monkeypatch, kinds=STRIP_KINDS)
-    assert "Back to the dataset verdict" not in [b.label for b in at.button]
     at.text_input(key="ds_jump").set_value("2:1731000000000").run()      # what the cell's click handler writes
     assert not at.exception
     assert at.session_state["ds_open"] == 2
-    assert any("Back to the dataset verdict" in b.label for b in at.button)
-    assert at.session_state["hub"]["anchor"] is not None                  # playing, no Play click needed
-    assert 'id="ds-ep"' in html_of(at)
+    page = html_of(at)
+    assert 'id="qgh"' in page and 'id="ds-ep"' in page                   # the player, and the anchor the page scrolls to
+    assert "playing: prev ? prev.playing : true" in page                  # a newly opened episode plays without a click
+    assert "dataset verdict" not in " ".join(b.label for b in at.button)  # no back button
+
+
+@pytest.mark.parametrize("kinds, opened", [
+    (STRIP_KINDS, 0),                  # 0 warns: the first flagged episode, warn or fail
+    ({0: "move", 1: "copy"}, 1),       # 0 passes, 1 fails
+    ({}, 0),                           # nothing flagged: the first episode
+])
+def test_entering_a_dataset_opens_the_first_flagged_episode_or_else_the_first(tmp_path, monkeypatch, kinds, opened):
+    at = verdict_page(tmp_path, monkeypatch, kinds=kinds)
+    assert at.session_state["ds_open"] == opened
+    assert 'id="qgh"' in html_of(at) and f"<b>Episode {opened}</b>" in html_of(at)
 
 
 def test_a_check_that_fires_in_every_episode_shows_as_passing_in_the_overview(tmp_path, monkeypatch):
